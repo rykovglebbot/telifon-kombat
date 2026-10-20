@@ -816,10 +816,12 @@
         }
 
         // Аудиофайлы
+        const clickSound = new Audio('ai.mp3');
         const mellSound = new Audio('mell.mp3');
         const kochSound = new Audio('koch.mp3');
 
         // Предзагрузка
+        clickSound.load();
         mellSound.load();
         kochSound.load();
 
@@ -828,6 +830,7 @@
         clickArea.addEventListener('pointerdown', (e) => {
             // Разблокировка автопроизведения для браузеров
             if (!audioUnlocked) {
+                clickSound.play().then(() => clickSound.pause()).catch(() => {});
                 mellSound.play().then(() => mellSound.pause()).catch(() => {});
                 audioUnlocked = true;
             }
@@ -844,9 +847,10 @@
                 localStorage.setItem('telifon_last_time', Date.now());
                 updateUpgradesUI();
 
-                // Воспроизведение mell.mp3 при каждом клике
-                mellSound.currentTime = 0;
-                mellSound.play().catch(error => {
+                // Воспроизведение: mell.mp3 при скине Mellstroy, ai.mp3 во всех остальных случаях
+                const activeAudio = (activeSkinId === 'mellstroy') ? mellSound : clickSound;
+                activeAudio.currentTime = 0;
+                activeAudio.play().catch(error => {
                     console.log("Ошибка воспроизведения звука:", error);
                 });
 
