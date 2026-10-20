@@ -815,15 +815,26 @@
             alert('Ссылка скопирована!');
         }
 
+        // Аудиофайлы
         const clickSound = new Audio('ai.mp3');
         const mellSound = new Audio('mell.mp3');
         const kochSound = new Audio('koch.mp3');
+
+        // Предзагрузка
+        clickSound.load();
+        mellSound.load();
         kochSound.load();
 
-        let pauseTimer = null;
-        let kochPauseTimer = null;
+        let audioUnlocked = false;
 
         clickArea.addEventListener('pointerdown', (e) => {
+            // Разблокировка воспроизведения аудио при первом клике (для браузеров/Telegram WebApp)
+            if (!audioUnlocked) {
+                clickSound.play().then(() => clickSound.pause()).catch(() => {});
+                mellSound.play().then(() => mellSound.pause()).catch(() => {});
+                audioUnlocked = true;
+            }
+
             if (energy >= clickPower) {
                 if (!isDevUser) score += clickPower;
                 energy -= clickPower; 
@@ -836,23 +847,14 @@
                 localStorage.setItem('telifon_last_time', Date.now());
                 updateUpgradesUI();
 
+                // Выбор звука в зависимости от активного скина
                 const activeAudio = (activeSkinId === 'mellstroy') ? mellSound : clickSound;
 
-                if (activeAudio.ended) {
-                    activeAudio.currentTime = 0;
-                }
-
+                // Перезапуск аудио для быстрых повторных кликов
+                activeAudio.currentTime = 0;
                 activeAudio.play().catch(error => {
                     console.log("Ошибка воспроизведения звука:", error);
                 });
-
-                if (pauseTimer) {
-                    clearTimeout(pauseTimer);
-                }
-
-                pauseTimer = setTimeout(() => {
-                    activeAudio.pause();
-                }, 1000);
 
                 const randomAngle = (Math.random() - 0.5) * 70; 
                 const randomX = (Math.random() - 0.5) * 20;
@@ -916,11 +918,6 @@
                 } catch (err) {
                     console.log("Исключение при проигрывании koch.mp3:", err);
                 }
-
-                if (kochPauseTimer) clearTimeout(kochPauseTimer);
-                kochPauseTimer = setTimeout(() => {
-                    kochSound.pause();
-                }, 1000);
 
                 showFloatingText(e.clientX, e.clientY, "⚡ МАКС!");
 
