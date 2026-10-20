@@ -120,7 +120,7 @@
 
         <button class="upgrade-btn" id="regenUpgradeBtn" onclick="buyRegenUpgrade()">
             <span id="regenUpgradeTitle">Восстановление энергии</span><br>
-            <span id="regenUpgradeInfo" style="font-size: 10px; font-weight: normal;">Цена: 9000 | Скорость: x4.5</span>
+            <span id="regenUpgradeInfo" style="font-size: 10px; font-weight: normal;">Цена: 3000 | Скорость: x1.5</span>
         </button>
     </div>
 
@@ -154,16 +154,16 @@
             { cost: 20001, maxEnergy: 250000 }
         ];
 
-        // Увеличенные в 3 раза данные улучшений скорости восстановления энергии
+        // Данные улучшений скорости восстановления энергии
         const regenUpgradesData = [
-            { cost: 9000, multiplier: 4.5 },
-            { cost: 18000, multiplier: 5.1 },
-            { cost: 36000, multiplier: 6.0 },
-            { cost: 75000, multiplier: 6.6 },
-            { cost: 180000, multiplier: 7.5 },
-            { cost: 360000, multiplier: 9.0 },
-            { cost: 900000, multiplier: 15.0 },
-            { cost: 2400000, multiplier: 30.0 }
+            { cost: 3000, multiplier: 1.5 },
+            { cost: 6000, multiplier: 1.7 },
+            { cost: 12000, multiplier: 2.0 },
+            { cost: 25000, multiplier: 2.2 },
+            { cost: 60000, multiplier: 2.5 },
+            { cost: 120000, multiplier: 3.0 },
+            { cost: 300000, multiplier: 5.0 },
+            { cost: 800000, multiplier: 10.0 }
         ];
 
         // Загружаем сохраненные данные и уровни прокачки
@@ -349,9 +349,10 @@
 
         // Клик по персонажу
         clickArea.addEventListener('pointerdown', (e) => {
-            if (energy >= clickPower) {
+            // Для клика всегда требуется ровно 1 единица энергии
+            if (energy >= 1) {
                 score += clickPower;
-                energy -= clickPower; 
+                energy -= 1; // Всегда тратится ровно 1 энергия
                 
                 scoreElement.innerText = score;
                 energyElement.innerText = Math.floor(energy);
@@ -392,7 +393,7 @@
             }
         });
 
-        // Автоматическое восстановление энергии с новым увеличенным множителем
+        // Автоматическое восстановление энергии в реальном времени с учетом множителя
         setInterval(() => {
             let currentMax = getMaxEnergy();
             if (energy < currentMax) {
