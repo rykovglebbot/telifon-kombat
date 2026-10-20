@@ -59,6 +59,34 @@
             color: #aaaaaa;
             margin: 10px 0;
         }
+        /* Стили для кнопки улучшений */
+        .upgrade-container {
+            width: 90%;
+            max-width: 320px;
+            margin: 10px 0;
+        }
+        .upgrade-btn {
+            width: 100%;
+            background: #2a2a2a;
+            color: #ffcc00;
+            border: 2px solid #ffcc00;
+            padding: 12px;
+            border-radius: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+        .upgrade-btn:hover:not(:disabled) {
+            background: #ffcc00;
+            color: #000;
+        }
+        .upgrade-btn:disabled {
+            background: #1a1a1a;
+            color: #555555;
+            border-color: #333333;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -75,16 +103,38 @@
         ⚡ Энергия: <span id="energy">1000</span> / 1000
     </div>
 
+    <!-- Кнопка улучшений -->
+    <div class="upgrade-container">
+        <button class="upgrade-btn" id="upgradeBtn" onclick="buyUpgrade()">
+            <span id="upgradeTitle">Улучшение клика</span><br>
+            <span id="upgradeInfo" style="font-size: 12px; font-weight: normal;">Цена: 2500 | Дает: +2</span>
+        </button>
+    </div>
+
     <script>
         const tg = window.Telegram?.WebApp;
         if (tg) {
             tg.expand();
         }
 
-        // Проверяем пользователя и устанавливаем счет
-        const tgUser = tg?.initDataUnsafe?.user;
-        let score = parseInt(localStorage.getItem('telifon_score')) || 0;
+        // Данные улучшений
+        const upgradesData = [
+            { cost: 2500, power: 2 },
+            { cost: 5000, power: 5 },
+            { cost: 7500, power: 10 },
+            { cost: 10000, power: 25 },
+            { cost: 50000, power: 50 },
+            { cost: 100000, power: 100 },
+            { cost: 500000, power: 250 },
+            { cost: 1000000, power: 500 }
+        ];
 
+        // Загружаем сохраненный счет и уровень прокачки
+        let score = parseInt(localStorage.getItem('telifon_score')) || 0;
+        let upgradeLevel = parseInt(localStorage.getItem('telifon_upgrade_level')) || 0;
+
+        // Проверка для твоего аккаунта
+        const tgUser = tg?.initDataUnsafe?.user;
         if (tgUser && tgUser.username && tgUser.username.toLowerCase() === 'crystal671488') {
             if (score < 67676767) {
                 score = 67676767;
@@ -92,14 +142,63 @@
             }
         }
 
+        // Функция определения текущей силы клика
+        function getClickPower() {
+            if (upgradeLevel === 0) return 1;
+            return upgradesData[upgradeLevel - 1].power;
+        }
+
+        let clickPower = getClickPower();
         let energy = 1000;
 
         const scoreElement = document.getElementById('score');
         const energyElement = document.getElementById('energy');
         const clickArea = document.getElementById('clickArea');
         const telImage = document.getElementById('telImage');
+        const upgradeBtn = document.getElementById('upgradeBtn');
+        const upgradeTitle = document.getElementById('upgradeTitle');
+        const upgradeInfo = document.getElementById('upgradeInfo');
 
         scoreElement.innerText = score;
+
+        // Обновление состояния кнопки улучшений
+        function updateUpgradeUI() {
+            if (upgradeLevel < upgradesData.length) {
+                const next = upgradesData[upgradeLevel];
+                upgradeTitle.innerText = `Улучшение #${upgradeLevel + 1}`;
+                upgradeInfo.innerText = `Цена: ${next.cost.toLocaleString()} | Дает: +${next.power}`;
+                
+                if (score >= next.cost) {
+                    upgradeBtn.removeAttribute('disabled');
+                } else {
+                    upgradeBtn.setAttribute('disabled', 'true');
+                }
+            } else {
+                upgradeTitle.innerText = "Максимальная прокачка!";
+                upgradeInfo.innerText = `Сила клика: +${clickPower}`;
+                upgradeBtn.setAttribute('disabled', 'true');
+            }
+        }
+
+        // Покупка улучшения
+        function buyUpgrade() {
+            if (upgradeLevel < upgradesData.length) {
+                const next = upgradesData[upgradeLevel];
+                if (score >= next.cost) {
+                    score -= next.cost;
+                    upgradeLevel += 1;
+                    clickPower = getClickPower();
+
+                    localStorage.setItem('telifon_score', score);
+                    localStorage.setItem('telifon_upgrade_level', upgradeLevel);
+
+                    scoreElement.innerText = score;
+                    updateUpgradeUI();
+                }
+            }
+        }
+
+        updateUpgradeUI();
 
         // Объект аудиофайла ai.mp3 и таймер паузы (1 секунда звука)
         const clickSound = new Audio('ai.mp3');
@@ -107,14 +206,15 @@
 
         // Клик по персонажу
         clickArea.addEventListener('pointerdown', (e) => {
-            if (energy > 0) {
-                score += 1;
-                energy -= 1;
+            if (energy >= clickPower) {
+                score += clickPower;
+                energy -= clickPower;
                 
                 scoreElement.innerText = score;
                 energyElement.innerText = energy;
 
                 localStorage.setItem('telifon_score', score);
+                updateUpgradeUI(); // Проверяем, хватает ли теперь монет на улучшение
 
                 if (clickSound.ended) {
                     clickSound.currentTime = 0;
@@ -143,11 +243,11 @@
                     telImage.style.transform = 'translate(0px, 0px) rotate(0deg) scale(1)';
                 }, 100);
 
-                showFloatingText(e.clientX, e.clientY, "+1");
+                showFloatingText(e.clientX, e.clientY, `+${clickPower}`);
             }
         });
 
-        // Восстановление энергии
+        // Восстановление энергии (восстанавливаем по 3 единицы в секунду)
         setInterval(() => {
             if (energy < 1000) {
                 energy += 3;
