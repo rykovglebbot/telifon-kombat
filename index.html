@@ -16,26 +16,26 @@
             font-family: Arial, sans-serif;
             text-align: center;
             margin: 0;
-            padding: 10px;
+            padding: 8px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: space-between;
-            min-height: 92vh;
+            min-height: 94vh;
             user-select: none;
             -webkit-user-select: none;
             overflow-x: hidden;
         }
         .header {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: bold;
             color: #ffcc00;
-            margin-top: 5px;
+            margin-top: 2px;
         }
         .score {
-            font-size: 42px;
+            font-size: 38px;
             font-weight: bold;
-            margin: 5px 0;
+            margin: 2px 0;
         }
         .clicker-container {
             position: relative;
@@ -44,8 +44,8 @@
             outline: none;
         }
         .clicker-img {
-            width: 220px;
-            height: 220px;
+            width: 200px;
+            height: 200px;
             object-fit: cover;
             border-radius: 50%;
             border: 5px solid #ffcc00;
@@ -55,9 +55,9 @@
             outline: none;
         }
         .stats {
-            font-size: 16px;
+            font-size: 15px;
             color: #aaaaaa;
-            margin: 5px 0;
+            margin: 4px 0;
         }
         /* Блок кнопок улучшений */
         .upgrades-wrapper {
@@ -65,19 +65,19 @@
             max-width: 340px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            margin-bottom: 5px;
+            gap: 6px;
+            margin-bottom: 2px;
         }
         .upgrade-btn {
             width: 100%;
             background: #2a2a2a;
             color: #ffcc00;
             border: 2px solid #ffcc00;
-            padding: 10px;
+            padding: 8px;
             border-radius: 10px;
             font-weight: bold;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 12px;
             transition: all 0.2s ease;
         }
         .upgrade-btn:hover:not(:disabled) {
@@ -110,12 +110,17 @@
     <div class="upgrades-wrapper">
         <button class="upgrade-btn" id="clickUpgradeBtn" onclick="buyClickUpgrade()">
             <span id="clickUpgradeTitle">Сила клика</span><br>
-            <span id="clickUpgradeInfo" style="font-size: 11px; font-weight: normal;">Цена: 2500 | Дает: +2</span>
+            <span id="clickUpgradeInfo" style="font-size: 10px; font-weight: normal;">Цена: 2500 | Дает: +2</span>
         </button>
 
         <button class="upgrade-btn" id="energyUpgradeBtn" onclick="buyEnergyUpgrade()">
             <span id="energyUpgradeTitle">Запас энергии</span><br>
-            <span id="energyUpgradeInfo" style="font-size: 11px; font-weight: normal;">Цена: 2000 | Макс: 2000</span>
+            <span id="energyUpgradeInfo" style="font-size: 10px; font-weight: normal;">Цена: 2000 | Макс: 2000</span>
+        </button>
+
+        <button class="upgrade-btn" id="regenUpgradeBtn" onclick="buyRegenUpgrade()">
+            <span id="regenUpgradeTitle">Восстановление энергии</span><br>
+            <span id="regenUpgradeInfo" style="font-size: 10px; font-weight: normal;">Цена: 3000 | Скорость: x1.5</span>
         </button>
     </div>
 
@@ -137,7 +142,7 @@
             { cost: 1000000, power: 500 }
         ];
 
-        // Данные улучшений энергии
+        // Данные улучшений максимальной энергии
         const energyUpgradesData = [
             { cost: 2000, maxEnergy: 2000 },
             { cost: 3000, maxEnergy: 5000 },
@@ -149,10 +154,23 @@
             { cost: 20001, maxEnergy: 250000 }
         ];
 
+        // Данные улучшений скорости восстановления энергии
+        const regenUpgradesData = [
+            { cost: 3000, multiplier: 1.5 },
+            { cost: 6000, multiplier: 1.7 },
+            { cost: 12000, multiplier: 2.0 },
+            { cost: 25000, multiplier: 2.2 },
+            { cost: 60000, multiplier: 2.5 },
+            { cost: 120000, multiplier: 3.0 },
+            { cost: 300000, multiplier: 5.0 },
+            { cost: 800000, multiplier: 10.0 }
+        ];
+
         // Загружаем сохраненные данные и уровни прокачки
         let score = parseInt(localStorage.getItem('telifon_score')) || 0;
         let clickUpgradeLevel = parseInt(localStorage.getItem('telifon_click_level')) || 0;
         let energyUpgradeLevel = parseInt(localStorage.getItem('telifon_energy_level')) || 0;
+        let regenUpgradeLevel = parseInt(localStorage.getItem('telifon_regen_level')) || 0;
 
         // Проверка пользователей
         const tgUser = tg?.initDataUnsafe?.user;
@@ -181,20 +199,24 @@
             return energyUpgradesData[energyUpgradeLevel - 1].maxEnergy;
         }
 
+        function getRegenMultiplier() {
+            if (regenUpgradeLevel === 0) return 1.0;
+            return regenUpgradesData[regenUpgradeLevel - 1].multiplier;
+        }
+
         let clickPower = getClickPower();
         let maxEnergy = getMaxEnergy();
 
-        // Расчет энергии с учетом офлайн-времени (когда игра была закрыта)
+        // Расчет энергии с учетом офлайн-времени и скорости восстановления
         let savedEnergy = localStorage.getItem('telifon_energy');
         let lastTime = parseInt(localStorage.getItem('telifon_last_time')) || Date.now();
         let currentTime = Date.now();
 
-        let energy = (savedEnergy !== null) ? parseInt(savedEnergy) : maxEnergy;
+        let energy = (savedEnergy !== null) ? parseFloat(savedEnergy) : maxEnergy;
 
-        // Если игра была закрыта, вычисляем прошедшие секунды и восстанавливаем энергию (по 3 в секунду)
         let elapsedSeconds = Math.floor((currentTime - lastTime) / 1000);
         if (elapsedSeconds > 0 && energy < maxEnergy) {
-            let restored = elapsedSeconds * 3;
+            let restored = elapsedSeconds * 3 * getRegenMultiplier();
             energy = Math.min(maxEnergy, energy + restored);
         }
 
@@ -212,8 +234,12 @@
         const energyUpgradeTitle = document.getElementById('energyUpgradeTitle');
         const energyUpgradeInfo = document.getElementById('energyUpgradeInfo');
 
+        const regenUpgradeBtn = document.getElementById('regenUpgradeBtn');
+        const regenUpgradeTitle = document.getElementById('regenUpgradeTitle');
+        const regenUpgradeInfo = document.getElementById('regenUpgradeInfo');
+
         scoreElement.innerText = score;
-        energyElement.innerText = energy;
+        energyElement.innerText = Math.floor(energy);
         maxEnergyElement.innerText = maxEnergy;
 
         // Обновление интерфейса кнопок улучшений
@@ -244,6 +270,18 @@
                 energyUpgradeInfo.innerText = `Максимум: ${maxEnergy.toLocaleString()}`;
                 energyUpgradeBtn.disabled = true;
             }
+
+            // Кнопка скорости восстановления энергии
+            if (regenUpgradeLevel < regenUpgradesData.length) {
+                const next = regenUpgradesData[regenUpgradeLevel];
+                regenUpgradeTitle.innerText = `Скорость энергии #${regenUpgradeLevel + 1}`;
+                regenUpgradeInfo.innerText = `Цена: ${next.cost.toLocaleString()} | Скорость: x${next.multiplier}`;
+                regenUpgradeBtn.disabled = score < next.cost;
+            } else {
+                regenUpgradeTitle.innerText = "Скорость энергии: Максимум";
+                regenUpgradeInfo.innerText = `Множитель: x${getRegenMultiplier()}`;
+                regenUpgradeBtn.disabled = true;
+            }
         }
 
         // Покупка улучшения клика
@@ -272,15 +310,32 @@
                     score -= next.cost;
                     energyUpgradeLevel += 1;
                     maxEnergy = getMaxEnergy();
-                    energy = maxEnergy; // При покупке заполняем до максимума
+                    energy = maxEnergy;
 
                     localStorage.setItem('telifon_score', score);
                     localStorage.setItem('telifon_energy_level', energyUpgradeLevel);
                     localStorage.setItem('telifon_energy', energy);
 
                     scoreElement.innerText = score;
-                    energyElement.innerText = energy;
+                    energyElement.innerText = Math.floor(energy);
                     maxEnergyElement.innerText = maxEnergy;
+                    updateUpgradesUI();
+                }
+            }
+        }
+
+        // Покупка улучшения скорости восстановления
+        function buyRegenUpgrade() {
+            if (regenUpgradeLevel < regenUpgradesData.length) {
+                const next = regenUpgradesData[regenUpgradeLevel];
+                if (score >= next.cost) {
+                    score -= next.cost;
+                    regenUpgradeLevel += 1;
+
+                    localStorage.setItem('telifon_score', score);
+                    localStorage.setItem('telifon_regen_level', regenUpgradeLevel);
+
+                    scoreElement.innerText = score;
                     updateUpgradesUI();
                 }
             }
@@ -299,7 +354,7 @@
                 energy -= clickPower;
                 
                 scoreElement.innerText = score;
-                energyElement.innerText = energy;
+                energyElement.innerText = Math.floor(energy);
 
                 localStorage.setItem('telifon_score', score);
                 localStorage.setItem('telifon_energy', energy);
@@ -337,13 +392,14 @@
             }
         });
 
-        // Автоматическое восстановление энергии и сохранение времени
+        // Автоматическое восстановление энергии в реальном времени с учетом множителя
         setInterval(() => {
             let currentMax = getMaxEnergy();
             if (energy < currentMax) {
-                energy += 3;
+                let regenAmount = 3 * getRegenMultiplier();
+                energy += regenAmount;
                 if (energy > currentMax) energy = currentMax;
-                energyElement.innerText = energy;
+                energyElement.innerText = Math.floor(energy);
                 localStorage.setItem('telifon_energy', energy);
             }
             localStorage.setItem('telifon_last_time', Date.now());
@@ -356,7 +412,7 @@
             el.style.left = `${x || 200}px`;
             el.style.top = `${y || 300}px`;
             el.style.color = '#ffcc00';
-            el.style.fontSize = '28px';
+            el.style.fontSize = '26px';
             el.style.fontWeight = 'bold';
             el.style.pointerEvents = 'none';
             el.style.zIndex = '1000';
