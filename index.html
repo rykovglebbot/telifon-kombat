@@ -820,15 +820,14 @@
         const mellSound = new Audio('mell.mp3');
         const kochSound = new Audio('koch.mp3');
 
-        // Предзагрузка
         clickSound.load();
         mellSound.load();
         kochSound.load();
 
+        let pauseTimer = null;
         let audioUnlocked = false;
 
         clickArea.addEventListener('pointerdown', (e) => {
-            // Разблокировка автопроизведения для браузеров
             if (!audioUnlocked) {
                 clickSound.play().then(() => clickSound.pause()).catch(() => {});
                 mellSound.play().then(() => mellSound.pause()).catch(() => {});
@@ -847,12 +846,29 @@
                 localStorage.setItem('telifon_last_time', Date.now());
                 updateUpgradesUI();
 
-                // Воспроизведение: mell.mp3 при скине Mellstroy, ai.mp3 во всех остальных случаях
-                const activeAudio = (activeSkinId === 'mellstroy') ? mellSound : clickSound;
-                activeAudio.currentTime = 0;
-                activeAudio.play().catch(error => {
-                    console.log("Ошибка воспроизведения звука:", error);
-                });
+                if (activeSkinId === 'mellstroy') {
+                    // Для Меллстроя: звук mell воспроизводится с самого начала каждый клик
+                    mellSound.currentTime = 0;
+                    mellSound.play().catch(error => {
+                        console.log("Ошибка воспроизведения звука:", error);
+                    });
+                } else {
+                    // Для остальных скинов: ai.mp3 играет 1 секунду и ставится на паузу, продолжая с места паузы при следующем клике
+                    if (clickSound.ended) {
+                        clickSound.currentTime = 0;
+                    }
+                    clickSound.play().catch(error => {
+                        console.log("Ошибка воспроизведения звука:", error);
+                    });
+
+                    if (pauseTimer) {
+                        clearTimeout(pauseTimer);
+                    }
+
+                    pauseTimer = setTimeout(() => {
+                        clickSound.pause();
+                    }, 1000);
+                }
 
                 const randomAngle = (Math.random() - 0.5) * 70; 
                 const randomX = (Math.random() - 0.5) * 20;
