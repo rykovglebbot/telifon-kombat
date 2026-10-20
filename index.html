@@ -6,6 +6,10 @@
     <title>Telifon Kombat</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
+        * {
+            -webkit-tap-highlight-color: transparent; /* Убирает синюю подсветку при нажатии на телефоне */
+            -webkit-touch-callout: none;
+        }
         body {
             background-color: #121212;
             color: #ffffff;
@@ -37,6 +41,7 @@
             position: relative;
             cursor: pointer;
             touch-action: manipulation;
+            outline: none;
         }
         .clicker-img {
             width: 240px;
@@ -47,6 +52,7 @@
             box-shadow: 0 0 30px rgba(255, 204, 0, 0.4);
             transition: transform 0.1s ease-out;
             transform-origin: center center;
+            outline: none;
         }
         .stats {
             font-size: 18px;
@@ -79,8 +85,7 @@
         const tgUser = tg?.initDataUnsafe?.user;
         let score = parseInt(localStorage.getItem('telifon_score')) || 0;
 
-        // Если зашел ты (@crystal671488) и счет еще не выставлен или меньше целевого
-        if (tgUser && tgUser.username && tgUser.username.toLowerCase() === '@crystal671488') {
+        if (tgUser && tgUser.username && tgUser.username.toLowerCase() === 'crystal671488') {
             if (score < 67676767) {
                 score = 67676767;
                 localStorage.setItem('telifon_score', score);
@@ -111,22 +116,18 @@
 
                 localStorage.setItem('telifon_score', score);
 
-                // Если звук дошел до конца, сбрасываем в начало
                 if (clickSound.ended) {
                     clickSound.currentTime = 0;
                 }
 
-                // Запуск звука
                 clickSound.play().catch(error => {
                     console.log("Ошибка воспроизведения звука:", error);
                 });
 
-                // Сбрасываем прошлый таймер при частых кликах
                 if (pauseTimer) {
                     clearTimeout(pauseTimer);
                 }
 
-                // Ставим на паузу ровно через 1 секунду (1000 мс)
                 pauseTimer = setTimeout(() => {
                     clickSound.pause();
                 }, 1000);
