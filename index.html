@@ -365,6 +365,15 @@
             return isDevUser ? '∞' : score.toLocaleString();
         }
 
+        function getItemCost(baseCost) {
+            return isDevUser ? 0 : baseCost;
+        }
+
+        function formatCostText(cost) {
+            if (cost === 0) return 'Бесплатно';
+            return `${cost.toLocaleString()} монет`;
+        }
+
         function getClickPower() {
             if (clickUpgradeLevel === 0) return 1;
             return clickUpgradesData[clickUpgradeLevel - 1].power;
@@ -452,9 +461,10 @@
 
             if (clickUpgradeLevel < clickUpgradesData.length) {
                 const next = clickUpgradesData[clickUpgradeLevel];
+                const cost = getItemCost(next.cost);
                 clickUpgradeTitle.innerText = `Сила клика #${clickUpgradeLevel + 1}`;
-                clickUpgradeInfo.innerText = `Цена: ${next.cost.toLocaleString()} | Дает: +${next.power}`;
-                clickUpgradeBtn.disabled = !isDevUser && score < next.cost;
+                clickUpgradeInfo.innerText = `Цена: ${formatCostText(cost)} | Дает: +${next.power}`;
+                clickUpgradeBtn.disabled = !isDevUser && score < cost;
             } else {
                 clickUpgradeTitle.innerText = "Сила клика: Максимум";
                 clickUpgradeInfo.innerText = `Текущая сила: +${clickPower}`;
@@ -463,9 +473,10 @@
 
             if (energyUpgradeLevel < energyUpgradesData.length) {
                 const next = energyUpgradesData[energyUpgradeLevel];
+                const cost = getItemCost(next.cost);
                 energyUpgradeTitle.innerText = `Запас энергии #${energyUpgradeLevel + 1}`;
-                energyUpgradeInfo.innerText = `Цена: ${next.cost.toLocaleString()} | Макс: ${next.maxEnergy.toLocaleString()}`;
-                energyUpgradeBtn.disabled = !isDevUser && score < next.cost;
+                energyUpgradeInfo.innerText = `Цена: ${formatCostText(cost)} | Макс: ${next.maxEnergy.toLocaleString()}`;
+                energyUpgradeBtn.disabled = !isDevUser && score < cost;
             } else {
                 energyUpgradeTitle.innerText = "Запас энергии: Максимум";
                 energyUpgradeInfo.innerText = `Максимум: ${maxEnergy.toLocaleString()}`;
@@ -474,9 +485,10 @@
 
             if (regenUpgradeLevel < regenUpgradesData.length) {
                 const next = regenUpgradesData[regenUpgradeLevel];
+                const cost = getItemCost(next.cost);
                 regenUpgradeTitle.innerText = `Скорость энергии #${regenUpgradeLevel + 1}`;
-                regenUpgradeInfo.innerText = `Цена: ${next.cost.toLocaleString()} | Скорость: x${next.multiplier}`;
-                regenUpgradeBtn.disabled = !isDevUser && score < next.cost;
+                regenUpgradeInfo.innerText = `Цена: ${formatCostText(cost)} | Скорость: x${next.multiplier}`;
+                regenUpgradeBtn.disabled = !isDevUser && score < cost;
             } else {
                 regenUpgradeTitle.innerText = "Скорость энергии: Максимум";
                 regenUpgradeInfo.innerText = `Множитель: x${getRegenMultiplier()}`;
@@ -487,8 +499,9 @@
         function buyClickUpgrade() {
             if (clickUpgradeLevel < clickUpgradesData.length) {
                 const next = clickUpgradesData[clickUpgradeLevel];
-                if (isDevUser || score >= next.cost) {
-                    if (!isDevUser) score -= next.cost;
+                const cost = getItemCost(next.cost);
+                if (isDevUser || score >= cost) {
+                    if (!isDevUser) score -= cost;
                     clickUpgradeLevel += 1;
                     clickPower = getClickPower();
 
@@ -504,8 +517,9 @@
         function buyEnergyUpgrade() {
             if (energyUpgradeLevel < energyUpgradesData.length) {
                 const next = energyUpgradesData[energyUpgradeLevel];
-                if (isDevUser || score >= next.cost) {
-                    if (!isDevUser) score -= next.cost;
+                const cost = getItemCost(next.cost);
+                if (isDevUser || score >= cost) {
+                    if (!isDevUser) score -= cost;
                     energyUpgradeLevel += 1;
                     maxEnergy = getMaxEnergy();
                     energy = maxEnergy;
@@ -525,8 +539,9 @@
         function buyRegenUpgrade() {
             if (regenUpgradeLevel < regenUpgradesData.length) {
                 const next = regenUpgradesData[regenUpgradeLevel];
-                if (isDevUser || score >= next.cost) {
-                    if (!isDevUser) score -= next.cost;
+                const cost = getItemCost(next.cost);
+                if (isDevUser || score >= cost) {
+                    if (!isDevUser) score -= cost;
                     regenUpgradeLevel += 1;
 
                     if (!isDevUser) localStorage.setItem('telifon_score', score);
@@ -558,19 +573,20 @@
             skinsData.forEach(skin => {
                 const isPurchased = purchasedSkins.includes(skin.id);
                 const isActive = activeSkinId === skin.id;
+                const cost = getItemCost(skin.cost);
 
                 const card = document.createElement('div');
                 card.className = 'modal-card';
 
                 let buttonText = isActive ? 'Надето' : isPurchased ? 'Надеть' : 'Купить';
-                let isDisabled = isActive || (!isPurchased && !isDevUser && score < skin.cost);
+                let isDisabled = isActive || (!isPurchased && !isDevUser && score < cost);
 
                 card.innerHTML = `
                     <img src="${skin.file}" class="skin-preview" alt="${skin.name}">
                     <div class="skin-info">
                         <div style="font-weight: bold; font-size: 14px;">${skin.name}</div>
                         <div style="font-size: 11px; color: #ffcc00;">${skin.desc}</div>
-                        <div style="font-size: 11px; color: #aaa;">${skin.cost === 0 ? 'Бесплатно' : skin.cost.toLocaleString() + ' монет'}</div>
+                        <div style="font-size: 11px; color: #aaa;">${formatCostText(cost)}</div>
                     </div>
                     <button class="upgrade-btn" style="width: auto; padding: 6px 12px;" ${isDisabled ? 'disabled' : ''} onclick="handleSkinAction('${skin.id}')">
                         ${buttonText}
@@ -584,9 +600,11 @@
             const skin = skinsData.find(s => s.id === skinId);
             if (!skin) return;
 
+            const cost = getItemCost(skin.cost);
+
             if (!purchasedSkins.includes(skinId)) {
-                if (isDevUser || score >= skin.cost) {
-                    if (!isDevUser) score -= skin.cost;
+                if (isDevUser || score >= cost) {
+                    if (!isDevUser) score -= cost;
                     purchasedSkins.push(skinId);
                     activeSkinId = skinId;
 
@@ -613,7 +631,8 @@
             container.innerHTML = '';
             cardsData.forEach(c => {
                 const lvl = cardLevels[c.id] || 0;
-                const cost = Math.floor(c.baseCost * Math.pow(1.5, lvl));
+                const rawCost = Math.floor(c.baseCost * Math.pow(1.5, lvl));
+                const cost = getItemCost(rawCost);
                 const income = c.baseIncome;
 
                 const card = document.createElement('div');
@@ -622,7 +641,7 @@
                     <div style="text-align: left;">
                         <div style="font-weight: bold; font-size: 14px;">${c.name} <span style="color: #ffcc00;">(Ур. ${lvl})</span></div>
                         <div style="font-size: 11px; color: #aaa;">+${income}/сек за ур. (Всего: +${lvl * income}/сек)</div>
-                        <div style="font-size: 12px; color: #ffcc00;">Цена: ${cost.toLocaleString()}</div>
+                        <div style="font-size: 12px; color: #ffcc00;">Цена: ${formatCostText(cost)}</div>
                     </div>
                     <button class="upgrade-btn" style="width: auto; padding: 6px 12px;" ${(!isDevUser && score < cost) ? 'disabled' : ''} onclick="buyCard('${c.id}')">
                         Прокачать
@@ -636,7 +655,8 @@
             const c = cardsData.find(item => item.id === cardId);
             if (!c) return;
             const lvl = cardLevels[cardId] || 0;
-            const cost = Math.floor(c.baseCost * Math.pow(1.5, lvl));
+            const rawCost = Math.floor(c.baseCost * Math.pow(1.5, lvl));
+            const cost = getItemCost(rawCost);
 
             if (isDevUser || score >= cost) {
                 if (!isDevUser) score -= cost;
