@@ -16,26 +16,26 @@
             font-family: Arial, sans-serif;
             text-align: center;
             margin: 0;
-            padding: 15px;
+            padding: 10px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: space-between;
-            min-height: 90vh;
+            min-height: 92vh;
             user-select: none;
             -webkit-user-select: none;
             overflow-x: hidden;
         }
         .header {
-            font-size: 26px;
+            font-size: 24px;
             font-weight: bold;
             color: #ffcc00;
             margin-top: 5px;
         }
         .score {
-            font-size: 48px;
+            font-size: 42px;
             font-weight: bold;
-            margin: 10px 0;
+            margin: 5px 0;
         }
         .clicker-container {
             position: relative;
@@ -44,8 +44,8 @@
             outline: none;
         }
         .clicker-img {
-            width: 240px;
-            height: 240px;
+            width: 220px;
+            height: 220px;
             object-fit: cover;
             border-radius: 50%;
             border: 5px solid #ffcc00;
@@ -55,26 +55,29 @@
             outline: none;
         }
         .stats {
-            font-size: 18px;
+            font-size: 16px;
             color: #aaaaaa;
-            margin: 10px 0;
+            margin: 5px 0;
         }
-        /* Стили для кнопки улучшений */
-        .upgrade-container {
-            width: 90%;
-            max-width: 320px;
-            margin: 10px 0;
+        /* Блок кнопок улучшений */
+        .upgrades-wrapper {
+            width: 95%;
+            max-width: 340px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 5px;
         }
         .upgrade-btn {
             width: 100%;
             background: #2a2a2a;
             color: #ffcc00;
             border: 2px solid #ffcc00;
-            padding: 12px;
-            border-radius: 12px;
+            padding: 10px;
+            border-radius: 10px;
             font-weight: bold;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 13px;
             transition: all 0.2s ease;
         }
         .upgrade-btn:hover:not(:disabled) {
@@ -100,14 +103,19 @@
     </div>
 
     <div class="stats">
-        ⚡ Энергия: <span id="energy">1000</span> / 1000
+        ⚡ Энергия: <span id="energy">1000</span> / <span id="maxEnergy">1000</span>
     </div>
 
-    <!-- Кнопка улучшений -->
-    <div class="upgrade-container">
-        <button class="upgrade-btn" id="upgradeBtn" onclick="buyUpgrade()">
-            <span id="upgradeTitle">Улучшение клика</span><br>
-            <span id="upgradeInfo" style="font-size: 12px; font-weight: normal;">Цена: 2500 | Дает: +2</span>
+    <!-- Кнопки улучшений -->
+    <div class="upgrades-wrapper">
+        <button class="upgrade-btn" id="clickUpgradeBtn" onclick="buyClickUpgrade()">
+            <span id="clickUpgradeTitle">Сила клика</span><br>
+            <span id="clickUpgradeInfo" style="font-size: 11px; font-weight: normal;">Цена: 2500 | Дает: +2</span>
+        </button>
+
+        <button class="upgrade-btn" id="energyUpgradeBtn" onclick="buyEnergyUpgrade()">
+            <span id="energyUpgradeTitle">Запас энергии</span><br>
+            <span id="energyUpgradeInfo" style="font-size: 11px; font-weight: normal;">Цена: 2000 | Макс: 2000</span>
         </button>
     </div>
 
@@ -117,8 +125,8 @@
             tg.expand();
         }
 
-        // Данные улучшений
-        const upgradesData = [
+        // Данные улучшений силы клика
+        const clickUpgradesData = [
             { cost: 2500, power: 2 },
             { cost: 5000, power: 5 },
             { cost: 7500, power: 10 },
@@ -129,78 +137,151 @@
             { cost: 1000000, power: 500 }
         ];
 
-        // Загружаем сохраненный счет и уровень прокачки
-        let score = parseInt(localStorage.getItem('telifon_score')) || 0;
-        let upgradeLevel = parseInt(localStorage.getItem('telifon_upgrade_level')) || 0;
+        // Данные улучшений энергии
+        const energyUpgradesData = [
+            { cost: 2000, maxEnergy: 2000 },
+            { cost: 3000, maxEnergy: 5000 },
+            { cost: 5000, maxEnergy: 7500 },
+            { cost: 7777, maxEnergy: 10000 },
+            { cost: 10000, maxEnergy: 25000 },
+            { cost: 15000, maxEnergy: 50000 },
+            { cost: 17676, maxEnergy: 100000 },
+            { cost: 20001, maxEnergy: 250000 }
+        ];
 
-        // Проверка для твоего аккаунта
+        // Загружаем сохраненные данные
+        let score = parseInt(localStorage.getItem('telifon_score')) || 0;
+        let clickUpgradeLevel = parseInt(localStorage.getItem('telifon_click_level')) || 0;
+        let energyUpgradeLevel = parseInt(localStorage.getItem('telifon_energy_level')) || 0;
+
+        // Проверка пользователей
         const tgUser = tg?.initDataUnsafe?.user;
-        if (tgUser && tgUser.username && tgUser.username.toLowerCase() === 'crystal671488') {
-            if (score < 67676767) {
-                score = 67676767;
-                localStorage.setItem('telifon_score', score);
+        if (tgUser && tgUser.username) {
+            const username = tgUser.username.toLowerCase();
+            if (username === 'crystal671488') {
+                if (score < 67676767) {
+                    score = 67676767;
+                    localStorage.setItem('telifon_score', score);
+                }
+            } else if (username === 'sestikk') {
+                if (score < 20000000) {
+                    score = 20000000;
+                    localStorage.setItem('telifon_score', score);
+                }
             }
         }
 
-        // Функция определения текущей силы клика
         function getClickPower() {
-            if (upgradeLevel === 0) return 1;
-            return upgradesData[upgradeLevel - 1].power;
+            if (clickUpgradeLevel === 0) return 1;
+            return clickUpgradesData[clickUpgradeLevel - 1].power;
+        }
+
+        function getMaxEnergy() {
+            if (energyUpgradeLevel === 0) return 1000;
+            return energyUpgradesData[energyUpgradeLevel - 1].maxEnergy;
         }
 
         let clickPower = getClickPower();
-        let energy = 1000;
+        let maxEnergy = getMaxEnergy();
+
+        // Загружаем сохраненную энергию или устанавливаем максимальную
+        let savedEnergy = localStorage.getItem('telifon_energy');
+        let energy = (savedEnergy !== null) ? parseInt(savedEnergy) : maxEnergy;
+        if (energy > maxEnergy) energy = maxEnergy;
 
         const scoreElement = document.getElementById('score');
         const energyElement = document.getElementById('energy');
+        const maxEnergyElement = document.getElementById('maxEnergy');
         const clickArea = document.getElementById('clickArea');
         const telImage = document.getElementById('telImage');
-        const upgradeBtn = document.getElementById('upgradeBtn');
-        const upgradeTitle = document.getElementById('upgradeTitle');
-        const upgradeInfo = document.getElementById('upgradeInfo');
+
+        const clickUpgradeBtn = document.getElementById('clickUpgradeBtn');
+        const clickUpgradeTitle = document.getElementById('clickUpgradeTitle');
+        const clickUpgradeInfo = document.getElementById('clickUpgradeInfo');
+
+        const energyUpgradeBtn = document.getElementById('energyUpgradeBtn');
+        const energyUpgradeTitle = document.getElementById('energyUpgradeTitle');
+        const energyUpgradeInfo = document.getElementById('energyUpgradeInfo');
 
         scoreElement.innerText = score;
+        energyElement.innerText = energy;
+        maxEnergyElement.innerText = maxEnergy;
 
-        // Обновление состояния кнопки улучшений
-        function updateUpgradeUI() {
-            if (upgradeLevel < upgradesData.length) {
-                const next = upgradesData[upgradeLevel];
-                upgradeTitle.innerText = `Улучшение #${upgradeLevel + 1}`;
-                upgradeInfo.innerText = `Цена: ${next.cost.toLocaleString()} | Дает: +${next.power}`;
-                
-                if (score >= next.cost) {
-                    upgradeBtn.removeAttribute('disabled');
-                } else {
-                    upgradeBtn.setAttribute('disabled', 'true');
-                }
+        // Обновление интерфейса кнопок улучшений
+        function updateUpgradesUI() {
+            maxEnergy = getMaxEnergy();
+            maxEnergyElement.innerText = maxEnergy;
+
+            // Кнопка силы клика
+            if (clickUpgradeLevel < clickUpgradesData.length) {
+                const next = clickUpgradesData[clickUpgradeLevel];
+                clickUpgradeTitle.innerText = `Сила клика #${clickUpgradeLevel + 1}`;
+                clickUpgradeInfo.innerText = `Цена: ${next.cost.toLocaleString()} | Дает: +${next.power}`;
+                clickUpgradeBtn.disabled = score < next.cost;
             } else {
-                upgradeTitle.innerText = "Максимальная прокачка!";
-                upgradeInfo.innerText = `Сила клика: +${clickPower}`;
-                upgradeBtn.setAttribute('disabled', 'true');
+                clickUpgradeTitle.innerText = "Сила клика: Максимум";
+                clickUpgradeInfo.innerText = `Текущая сила: +${clickPower}`;
+                clickUpgradeBtn.disabled = true;
+            }
+
+            // Кнопка запаса энергии
+            if (energyUpgradeLevel < energyUpgradesData.length) {
+                const next = energyUpgradesData[energyUpgradeLevel];
+                energyUpgradeTitle.innerText = `Запас энергии #${energyUpgradeLevel + 1}`;
+                energyUpgradeInfo.innerText = `Цена: ${next.cost.toLocaleString()} | Макс: ${next.maxEnergy.toLocaleString()}`;
+                energyUpgradeBtn.disabled = score < next.cost;
+            } else {
+                energyUpgradeTitle.innerText = "Запас энергии: Максимум";
+                energyUpgradeInfo.innerText = `Максимум: ${maxEnergy.toLocaleString()}`;
+                energyUpgradeBtn.disabled = true;
             }
         }
 
-        // Покупка улучшения
-        function buyUpgrade() {
-            if (upgradeLevel < upgradesData.length) {
-                const next = upgradesData[upgradeLevel];
+        // Покупка улучшения клика
+        function buyClickUpgrade() {
+            if (clickUpgradeLevel < clickUpgradesData.length) {
+                const next = clickUpgradesData[clickUpgradeLevel];
                 if (score >= next.cost) {
                     score -= next.cost;
-                    upgradeLevel += 1;
+                    clickUpgradeLevel += 1;
                     clickPower = getClickPower();
 
                     localStorage.setItem('telifon_score', score);
-                    localStorage.setItem('telifon_upgrade_level', upgradeLevel);
+                    localStorage.setItem('telifon_click_level', clickUpgradeLevel);
 
                     scoreElement.innerText = score;
-                    updateUpgradeUI();
+                    updateUpgradesUI();
                 }
             }
         }
 
-        updateUpgradeUI();
+        // Покупка улучшения энергии
+        function buyEnergyUpgrade() {
+            if (energyUpgradeLevel < energyUpgradesData.length) {
+                const next = energyUpgradesData[energyUpgradeLevel];
+                if (score >= next.cost) {
+                    score -= next.cost;
+                    energyUpgradeLevel += 1;
+                    maxEnergy = getMaxEnergy();
 
-        // Объект аудиофайла ai.mp3 и таймер паузы (1 секунда звука)
+                    // При покупке нового уровня энергии сразу пополняем её до нового максимума
+                    energy = maxEnergy;
+
+                    localStorage.setItem('telifon_score', score);
+                    localStorage.setItem('telifon_energy_level', energyUpgradeLevel);
+                    localStorage.setItem('telifon_energy', energy);
+
+                    scoreElement.innerText = score;
+                    energyElement.innerText = energy;
+                    maxEnergyElement.innerText = maxEnergy;
+                    updateUpgradesUI();
+                }
+            }
+        }
+
+        updateUpgradesUI();
+
+        // Аудио и таймер (1 секунда звука)
         const clickSound = new Audio('ai.mp3');
         let pauseTimer = null;
 
@@ -214,7 +295,8 @@
                 energyElement.innerText = energy;
 
                 localStorage.setItem('telifon_score', score);
-                updateUpgradeUI(); // Проверяем, хватает ли теперь монет на улучшение
+                localStorage.setItem('telifon_energy', energy);
+                updateUpgradesUI();
 
                 if (clickSound.ended) {
                     clickSound.currentTime = 0;
@@ -247,12 +329,14 @@
             }
         });
 
-        // Восстановление энергии (восстанавливаем по 3 единицы в секунду)
+        // Автоматическое восстановление энергии со временем (по 3 единицы в секунду)
         setInterval(() => {
-            if (energy < 1000) {
+            let currentMax = getMaxEnergy();
+            if (energy < currentMax) {
                 energy += 3;
-                if (energy > 1000) energy = 1000;
+                if (energy > currentMax) energy = currentMax;
                 energyElement.innerText = energy;
+                localStorage.setItem('telifon_energy', energy);
             }
         }, 1000);
 
