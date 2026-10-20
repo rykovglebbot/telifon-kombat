@@ -90,7 +90,7 @@
             cursor: not-allowed;
         }
 
-        /* Стили для летающей бонусной картинки */
+        /* Быстрая и динамичная анимация бонуса */
         .flying-bonus {
             position: fixed;
             width: 55px;
@@ -101,7 +101,7 @@
             cursor: pointer;
             z-index: 2000;
             object-fit: cover;
-            transition: top 2s linear, left 2s linear;
+            transition: top 0.6s ease-in-out, left 0.6s ease-in-out;
         }
     </style>
 </head>
@@ -344,9 +344,13 @@
 
         updateUpgradesUI();
 
+        // Аудиофайлы с явной предзагрузкой
         const clickSound = new Audio('ai.mp3');
         const kochSound = new Audio('koch.mp3');
+        kochSound.load(); // Предварительная загрузка звука бонуса
+
         let pauseTimer = null;
+        let kochPauseTimer = null;
 
         // Основной клик
         clickArea.addEventListener('pointerdown', (e) => {
@@ -394,14 +398,9 @@
 
         // ЛОГИКА ПОЯВЛЕНИЯ ЛЕТАЮЩЕГО БОНУСА
         function scheduleBonusSpawn() {
-            // Если зашел @crystal671488 — интервал ровно 10 секунд (10 000 мс)
-            // Для остальных — от 2 минут (120 000 мс) до 10 минут (600 000 мс)
-            let delay;
-            if (isDevUser) {
-                delay = 10000;
-            } else {
-                delay = Math.floor(Math.random() * (600000 - 120000 + 1)) + 120000;
-            }
+            // Для crystal671488 — каждые 10 секунд (10 000 мс)
+            // Для всех остальных — ровно раз в 1 минуту (60 000 мс)
+            const delay = isDevUser ? 10000 : 60000;
             setTimeout(spawnBonus, delay);
         }
 
@@ -410,18 +409,20 @@
             bonus.src = 'tel.png';
             bonus.className = 'flying-bonus';
 
-            let maxX = window.innerWidth - 60;
-            let maxY = window.innerHeight - 60;
+            let maxX = window.innerWidth - 65;
+            let maxY = window.innerHeight - 65;
             bonus.style.left = `${Math.floor(Math.random() * maxX)}px`;
             bonus.style.top = `${Math.floor(Math.random() * maxY)}px`;
 
             document.body.appendChild(bonus);
 
+            // Быстрое перемещение каждые 700 мс
             const moveInterval = setInterval(() => {
                 bonus.style.left = `${Math.floor(Math.random() * maxX)}px`;
                 bonus.style.top = `${Math.floor(Math.random() * maxY)}px`;
-            }, 2000);
+            }, 700);
 
+            // Исчезновение через 10 секунд, если игрок не успел поймать
             const removeTimeout = setTimeout(() => {
                 clearInterval(moveInterval);
                 bonus.remove();
@@ -433,13 +434,26 @@
                 clearInterval(moveInterval);
                 clearTimeout(removeTimeout);
 
+                // Восполнение энергии
                 energy = getMaxEnergy();
                 energyElement.innerText = Math.floor(energy);
                 localStorage.setItem('telifon_energy', energy);
 
-                kochSound.currentTime = 0;
-                kochSound.play().catch(err => console.log(err));
-                setTimeout(() => {
+                // Воспроизведение koch.mp3 ровно на 1 секунду
+                try {
+                    kochSound.currentTime = 0;
+                    const playPromise = kochSound.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(err => {
+                            console.log("Ошибка воспроизведения koch.mp3:", err);
+                        });
+                    }
+                } catch (err) {
+                    console.log("Исключение при проигрывании koch.mp3:", err);
+                }
+
+                if (kochPauseTimer) clearTimeout(kochPauseTimer);
+                kochPauseTimer = setTimeout(() => {
                     kochSound.pause();
                 }, 1000);
 
