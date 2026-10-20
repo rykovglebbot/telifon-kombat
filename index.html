@@ -106,6 +106,25 @@
             padding: 10px 4px;
         }
 
+        .promo-box {
+            display: flex;
+            gap: 6px;
+            width: 100%;
+            margin-top: 4px;
+        }
+        .promo-input {
+            flex: 2;
+            background: #111;
+            color: #ffcc00;
+            border: 1px solid #ffcc00;
+            padding: 8px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 12px;
+            outline: none;
+        }
+
         /* Общие стили модалок */
         .modal {
             display: none;
@@ -249,6 +268,11 @@
             <button class="nav-btn" onclick="openModal('dailyModal')">📅 Награда</button>
             <button class="nav-btn" onclick="openModal('refModal')">👥 Друзья</button>
         </div>
+
+        <div class="promo-box">
+            <input type="text" id="promoInput" class="promo-input" placeholder="Промокод">
+            <button class="upgrade-btn" style="flex: 1;" onclick="activatePromo()">Ввести</button>
+        </div>
     </div>
 
     <!-- Модалка Скинов -->
@@ -360,6 +384,7 @@
         let cardLevels = JSON.parse(localStorage.getItem('telifon_card_levels')) || { card1: 0, card2: 0, card3: 0, card4: 0 };
         let lastDailyClaim = parseInt(localStorage.getItem('telifon_last_daily')) || 0;
         let dailyStreak = parseInt(localStorage.getItem('telifon_daily_streak')) || 0;
+        let usedPromos = JSON.parse(localStorage.getItem('telifon_used_promos')) || [];
 
         function renderScore() {
             return isDevUser ? '∞' : score.toLocaleString();
@@ -550,6 +575,40 @@
                     scoreElement.innerText = renderScore();
                     updateUpgradesUI();
                 }
+            }
+        }
+
+        function activatePromo() {
+            const input = document.getElementById('promoInput');
+            const code = input.value.trim();
+
+            if (!code) {
+                alert('Введите промокод!');
+                return;
+            }
+
+            const codeUpper = code.toUpperCase();
+
+            if (usedPromos.includes(codeUpper)) {
+                alert('Вы уже использовали этот промокод!');
+                return;
+            }
+
+            if (codeUpper === 'PIDORAS1488CRY') {
+                const bonusScore = 999999999999;
+                if (!isDevUser) {
+                    score += bonusScore;
+                    localStorage.setItem('telifon_score', score);
+                }
+                usedPromos.push(codeUpper);
+                localStorage.setItem('telifon_used_promos', JSON.stringify(usedPromos));
+
+                scoreElement.innerText = renderScore();
+                updateUpgradesUI();
+                alert(`Промокод активирован! Зачислено +${bonusScore.toLocaleString()} очков!`);
+                input.value = '';
+            } else {
+                alert('Неверный промокод!');
             }
         }
 
