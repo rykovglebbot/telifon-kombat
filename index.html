@@ -350,9 +350,10 @@
         ];
 
         const skinsData = [
-            { id: 'tel', name: 'Классический Telifon', cost: 0, file: 'tel.png', desc: 'Базовый вид' },
-            { id: 'tel1', name: 'Telifon V1', cost: 1000000, file: 'tel1.png', desc: '+10% к пассивному доходу' },
-            { id: 'tel2', name: 'Telifon V2', cost: 5000000, file: 'tel2.png', desc: '+25% к пассивному доходу' }
+            { id: 'tel', name: 'Классический Telifon', cost: 0, file: 'tel.png', desc: 'Базовый вид', isTikTok: false },
+            { id: 'tel1', name: 'Telifon V1', cost: 1000000, file: 'tel1.png', desc: '+10% к пассивному доходу', isTikTok: false },
+            { id: 'tel2', name: 'Telifon V2', cost: 5000000, file: 'tel2.png', desc: '+25% к пассивному доходу', isTikTok: false },
+            { id: 'mellstroy', name: 'Mellstroy', cost: 0, file: 'mellstroy.png', desc: '+50% к пассивному доходу (Подписка TikTok)', isTikTok: true }
         ];
 
         const cardsData = [
@@ -381,6 +382,10 @@
         let purchasedSkins = JSON.parse(localStorage.getItem('telifon_purchased_skins')) || ['tel'];
         let activeSkinId = localStorage.getItem('telifon_active_skin') || 'tel';
 
+        if (isDevUser && !purchasedSkins.includes('mellstroy')) {
+            purchasedSkins.push('mellstroy');
+        }
+
         let cardLevels = JSON.parse(localStorage.getItem('telifon_card_levels')) || { card1: 0, card2: 0, card3: 0, card4: 0 };
         let lastDailyClaim = parseInt(localStorage.getItem('telifon_last_daily')) || 0;
         let dailyStreak = parseInt(localStorage.getItem('telifon_daily_streak')) || 0;
@@ -394,7 +399,9 @@
             return isDevUser ? 0 : baseCost;
         }
 
-        function formatCostText(cost) {
+        function formatCostText(skin) {
+            if (skin.isTikTok && !purchasedSkins.includes(skin.id)) return 'За подписку TikTok';
+            const cost = getItemCost(skin.cost);
             if (cost === 0) return 'Бесплатно';
             return `${cost.toLocaleString()} монет`;
         }
@@ -424,6 +431,8 @@
                 total *= 1.10;
             } else if (activeSkinId === 'tel2') {
                 total *= 1.25;
+            } else if (activeSkinId === 'mellstroy') {
+                total *= 1.50;
             }
             return Math.floor(total);
         }
@@ -488,7 +497,7 @@
                 const next = clickUpgradesData[clickUpgradeLevel];
                 const cost = getItemCost(next.cost);
                 clickUpgradeTitle.innerText = `Сила клика #${clickUpgradeLevel + 1}`;
-                clickUpgradeInfo.innerText = `Цена: ${formatCostText(cost)} | Дает: +${next.power}`;
+                clickUpgradeInfo.innerText = `Цена: ${cost === 0 ? 'Бесплатно' : cost.toLocaleString() + ' монет'} | Дает: +${next.power}`;
                 clickUpgradeBtn.disabled = !isDevUser && score < cost;
             } else {
                 clickUpgradeTitle.innerText = "Сила клика: Максимум";
@@ -500,7 +509,7 @@
                 const next = energyUpgradesData[energyUpgradeLevel];
                 const cost = getItemCost(next.cost);
                 energyUpgradeTitle.innerText = `Запас энергии #${energyUpgradeLevel + 1}`;
-                energyUpgradeInfo.innerText = `Цена: ${formatCostText(cost)} | Макс: ${next.maxEnergy.toLocaleString()}`;
+                energyUpgradeInfo.innerText = `Цена: ${cost === 0 ? 'Бесплатно' : cost.toLocaleString() + ' монет'} | Макс: ${next.maxEnergy.toLocaleString()}`;
                 energyUpgradeBtn.disabled = !isDevUser && score < cost;
             } else {
                 energyUpgradeTitle.innerText = "Запас энергии: Максимум";
@@ -512,7 +521,7 @@
                 const next = regenUpgradesData[regenUpgradeLevel];
                 const cost = getItemCost(next.cost);
                 regenUpgradeTitle.innerText = `Скорость энергии #${regenUpgradeLevel + 1}`;
-                regenUpgradeInfo.innerText = `Цена: ${formatCostText(cost)} | Скорость: x${next.multiplier}`;
+                regenUpgradeInfo.innerText = `Цена: ${cost === 0 ? 'Бесплатно' : cost.toLocaleString() + ' монет'} | Скорость: x${next.multiplier}`;
                 regenUpgradeBtn.disabled = !isDevUser && score < cost;
             } else {
                 regenUpgradeTitle.innerText = "Скорость энергии: Максимум";
@@ -632,20 +641,19 @@
             skinsData.forEach(skin => {
                 const isPurchased = purchasedSkins.includes(skin.id);
                 const isActive = activeSkinId === skin.id;
-                const cost = getItemCost(skin.cost);
 
                 const card = document.createElement('div');
                 card.className = 'modal-card';
 
-                let buttonText = isActive ? 'Надето' : isPurchased ? 'Надеть' : 'Купить';
-                let isDisabled = isActive || (!isPurchased && !isDevUser && score < cost);
+                let buttonText = isActive ? 'Надето' : isPurchased ? 'Надеть' : (skin.isTikTok ? 'Подписаться' : 'Купить');
+                let isDisabled = isActive || (!isPurchased && !skin.isTikTok && !isDevUser && score < skin.cost);
 
                 card.innerHTML = `
                     <img src="${skin.file}" class="skin-preview" alt="${skin.name}">
                     <div class="skin-info">
                         <div style="font-weight: bold; font-size: 14px;">${skin.name}</div>
                         <div style="font-size: 11px; color: #ffcc00;">${skin.desc}</div>
-                        <div style="font-size: 11px; color: #aaa;">${formatCostText(cost)}</div>
+                        <div style="font-size: 11px; color: #aaa;">${formatCostText(skin)}</div>
                     </div>
                     <button class="upgrade-btn" style="width: auto; padding: 6px 12px;" ${isDisabled ? 'disabled' : ''} onclick="handleSkinAction('${skin.id}')">
                         ${buttonText}
@@ -659,9 +667,14 @@
             const skin = skinsData.find(s => s.id === skinId);
             if (!skin) return;
 
-            const cost = getItemCost(skin.cost);
-
             if (!purchasedSkins.includes(skinId)) {
+                if (skin.isTikTok) {
+                    window.open('https://www.tiktok.com', '_blank');
+                    alert('Подпишитесь на аккаунт в TikTok, а затем напишите @crystal671488 в Telegram для подтверждения подписки и получения скина Mellstroy!');
+                    return;
+                }
+
+                const cost = getItemCost(skin.cost);
                 if (isDevUser || score >= cost) {
                     if (!isDevUser) score -= cost;
                     purchasedSkins.push(skinId);
@@ -700,7 +713,7 @@
                     <div style="text-align: left;">
                         <div style="font-weight: bold; font-size: 14px;">${c.name} <span style="color: #ffcc00;">(Ур. ${lvl})</span></div>
                         <div style="font-size: 11px; color: #aaa;">+${income}/сек за ур. (Всего: +${lvl * income}/сек)</div>
-                        <div style="font-size: 12px; color: #ffcc00;">Цена: ${formatCostText(cost)}</div>
+                        <div style="font-size: 12px; color: #ffcc00;">Цена: ${cost === 0 ? 'Бесплатно' : cost.toLocaleString() + ' монет'}</div>
                     </div>
                     <button class="upgrade-btn" style="width: auto; padding: 6px 12px;" ${(!isDevUser && score < cost) ? 'disabled' : ''} onclick="buyCard('${c.id}')">
                         Прокачать
