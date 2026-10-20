@@ -816,6 +816,7 @@
         }
 
         const clickSound = new Audio('ai.mp3');
+        const mellSound = new Audio('mell.mp3');
         const kochSound = new Audio('koch.mp3');
         kochSound.load();
 
@@ -835,11 +836,13 @@
                 localStorage.setItem('telifon_last_time', Date.now());
                 updateUpgradesUI();
 
-                if (clickSound.ended) {
-                    clickSound.currentTime = 0;
+                const activeAudio = (activeSkinId === 'mellstroy') ? mellSound : clickSound;
+
+                if (activeAudio.ended) {
+                    activeAudio.currentTime = 0;
                 }
 
-                clickSound.play().catch(error => {
+                activeAudio.play().catch(error => {
                     console.log("Ошибка воспроизведения звука:", error);
                 });
 
@@ -848,7 +851,7 @@
                 }
 
                 pauseTimer = setTimeout(() => {
-                    clickSound.pause();
+                    activeAudio.pause();
                 }, 1000);
 
                 const randomAngle = (Math.random() - 0.5) * 70; 
@@ -973,4 +976,3 @@
     </script>
 </body>
 </html>
-
