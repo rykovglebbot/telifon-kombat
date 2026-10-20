@@ -86,8 +86,9 @@
 
         scoreElement.innerText = score;
 
-        // Объект аудиофайла ai.mp3
+        // Объект аудиофайла ai.mp3 и таймер паузы
         const clickSound = new Audio('ai.mp3');
+        let pauseTimer = null;
 
         // Клик по персонажу
         clickArea.addEventListener('pointerdown', (e) => {
@@ -100,13 +101,25 @@
 
                 localStorage.setItem('telifon_score', score);
 
-                // Воспроизведение звука ai.mp3 без заикания
-                if (clickSound.paused) {
+                // Если звук дошел до самого конца, сбрасываем в начало
+                if (clickSound.ended) {
                     clickSound.currentTime = 0;
-                    clickSound.play().catch(error => {
-                        console.log("Ошибка воспроизведения звука:", error);
-                    });
                 }
+
+                // Запускаем воспроизведение
+                clickSound.play().catch(error => {
+                    console.log("Ошибка воспроизведения звука:", error);
+                });
+
+                // Сбрасываем прошлый таймер, если кликают очень часто
+                if (pauseTimer) {
+                    clearTimeout(pauseTimer);
+                }
+
+                // Ставим на паузу строго через 1000 миллисекунд (1 секунда)
+                pauseTimer = setTimeout(() => {
+                    clickSound.pause();
+                }, 1000);
 
                 // Эффект сжатия и поворота
                 const randomAngle = (Math.random() - 0.5) * 70; 
