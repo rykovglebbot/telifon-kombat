@@ -120,7 +120,7 @@
 
         <button class="upgrade-btn" id="regenUpgradeBtn" onclick="buyRegenUpgrade()">
             <span id="regenUpgradeTitle">Восстановление энергии</span><br>
-            <span id="regenUpgradeInfo" style="font-size: 10px; font-weight: normal;">Цена: 3000 | Скорость: x1.5</span>
+            <span id="regenUpgradeInfo" style="font-size: 10px; font-weight: normal;">Цена: 9000 | Скорость: x4.5</span>
         </button>
     </div>
 
@@ -154,16 +154,16 @@
             { cost: 20001, maxEnergy: 250000 }
         ];
 
-        // Данные улучшений скорости восстановления энергии
+        // Увеличенные в 3 раза данные улучшений скорости восстановления энергии
         const regenUpgradesData = [
-            { cost: 3000, multiplier: 1.5 },
-            { cost: 6000, multiplier: 1.7 },
-            { cost: 12000, multiplier: 2.0 },
-            { cost: 25000, multiplier: 2.2 },
-            { cost: 60000, multiplier: 2.5 },
-            { cost: 120000, multiplier: 3.0 },
-            { cost: 300000, multiplier: 5.0 },
-            { cost: 800000, multiplier: 10.0 }
+            { cost: 9000, multiplier: 4.5 },
+            { cost: 18000, multiplier: 5.1 },
+            { cost: 36000, multiplier: 6.0 },
+            { cost: 75000, multiplier: 6.6 },
+            { cost: 180000, multiplier: 7.5 },
+            { cost: 360000, multiplier: 9.0 },
+            { cost: 900000, multiplier: 15.0 },
+            { cost: 2400000, multiplier: 30.0 }
         ];
 
         // Загружаем сохраненные данные и уровни прокачки
@@ -343,16 +343,25 @@
 
         updateUpgradesUI();
 
-        // Аудио и таймер (1 секунда звука)
+        // Аудиофайлы
         const clickSound = new Audio('ai.mp3');
+        const kochSound = new Audio('koch.mp3');
         let pauseTimer = null;
+        let holdTimer = null;
 
-        // Клик по персонажу
+        // Нажатие на персонажа
         clickArea.addEventListener('pointerdown', (e) => {
-            // Для клика всегда требуется ровно 1 единица энергии
-            if (energy >= 1) {
+            // Запускаем таймер зажатия на 1.5 секунды (1500 мс)
+            holdTimer = setTimeout(() => {
+                kochSound.currentTime = 0;
+                kochSound.play().catch(error => {
+                    console.log("Ошибка воспроизведения koch.mp3:", error);
+                });
+            }, 1500);
+
+            if (energy >= clickPower) {
                 score += clickPower;
-                energy -= 1; // Всегда тратится ровно 1 энергия
+                energy -= clickPower; 
                 
                 scoreElement.innerText = score;
                 energyElement.innerText = Math.floor(energy);
@@ -393,7 +402,19 @@
             }
         });
 
-        // Автоматическое восстановление энергии в реальном времени с учетом множителя
+        // Отмена таймера зажатия при отпускании или уходе пальца/курсора
+        const cancelHold = () => {
+            if (holdTimer) {
+                clearTimeout(holdTimer);
+                holdTimer = null;
+            }
+        };
+
+        clickArea.addEventListener('pointerup', cancelHold);
+        clickArea.addEventListener('pointerleave', cancelHold);
+        clickArea.addEventListener('pointercancel', cancelHold);
+
+        // Автоматическое восстановление энергии
         setInterval(() => {
             let currentMax = getMaxEnergy();
             if (energy < currentMax) {
