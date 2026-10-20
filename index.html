@@ -149,7 +149,7 @@
             { cost: 20001, maxEnergy: 250000 }
         ];
 
-        // Загружаем сохраненные данные
+        // Загружаем сохраненные данные и уровни прокачки
         let score = parseInt(localStorage.getItem('telifon_score')) || 0;
         let clickUpgradeLevel = parseInt(localStorage.getItem('telifon_click_level')) || 0;
         let energyUpgradeLevel = parseInt(localStorage.getItem('telifon_energy_level')) || 0;
@@ -184,10 +184,19 @@
         let clickPower = getClickPower();
         let maxEnergy = getMaxEnergy();
 
-        // Загружаем сохраненную энергию или устанавливаем максимальную
+        // Расчет энергии с учетом офлайн-времени (когда игра была закрыта)
         let savedEnergy = localStorage.getItem('telifon_energy');
+        let lastTime = parseInt(localStorage.getItem('telifon_last_time')) || Date.now();
+        let currentTime = Date.now();
+
         let energy = (savedEnergy !== null) ? parseInt(savedEnergy) : maxEnergy;
-        if (energy > maxEnergy) energy = maxEnergy;
+
+        // Если игра была закрыта, вычисляем прошедшие секунды и восстанавливаем энергию (по 3 в секунду)
+        let elapsedSeconds = Math.floor((currentTime - lastTime) / 1000);
+        if (elapsedSeconds > 0 && energy < maxEnergy) {
+            let restored = elapsedSeconds * 3;
+            energy = Math.min(maxEnergy, energy + restored);
+        }
 
         const scoreElement = document.getElementById('score');
         const energyElement = document.getElementById('energy');
@@ -263,9 +272,7 @@
                     score -= next.cost;
                     energyUpgradeLevel += 1;
                     maxEnergy = getMaxEnergy();
-
-                    // При покупке нового уровня энергии сразу пополняем её до нового максимума
-                    energy = maxEnergy;
+                    energy = maxEnergy; // При покупке заполняем до максимума
 
                     localStorage.setItem('telifon_score', score);
                     localStorage.setItem('telifon_energy_level', energyUpgradeLevel);
@@ -296,6 +303,7 @@
 
                 localStorage.setItem('telifon_score', score);
                 localStorage.setItem('telifon_energy', energy);
+                localStorage.setItem('telifon_last_time', Date.now());
                 updateUpgradesUI();
 
                 if (clickSound.ended) {
@@ -329,7 +337,7 @@
             }
         });
 
-        // Автоматическое восстановление энергии со временем (по 3 единицы в секунду)
+        // Автоматическое восстановление энергии и сохранение времени
         setInterval(() => {
             let currentMax = getMaxEnergy();
             if (energy < currentMax) {
@@ -338,6 +346,7 @@
                 energyElement.innerText = energy;
                 localStorage.setItem('telifon_energy', energy);
             }
+            localStorage.setItem('telifon_last_time', Date.now());
         }, 1000);
 
         function showFloatingText(x, y, text) {
