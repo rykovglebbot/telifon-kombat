@@ -349,9 +349,10 @@
 
         // Клик по персонажу
         clickArea.addEventListener('pointerdown', (e) => {
+            // При каждом клике тратится энергия в размере силы клика
             if (energy >= clickPower) {
                 score += clickPower;
-                energy -= clickPower;
+                energy -= clickPower; 
                 
                 scoreElement.innerText = score;
                 energyElement.innerText = Math.floor(energy);
@@ -392,7 +393,7 @@
             }
         });
 
-        // Автоматическое восстановление энергии в реальном времени с учетом множителя
+        // Автоматическое восстановление энергии в реальном времени с учетом множителя скорости
         setInterval(() => {
             let currentMax = getMaxEnergy();
             if (energy < currentMax) {
