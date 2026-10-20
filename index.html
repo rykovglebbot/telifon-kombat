@@ -75,8 +75,18 @@
             tg.expand();
         }
 
-        // Загружаем сохраненный счет
+        // Проверяем пользователя и устанавливаем счет
+        const tgUser = tg?.initDataUnsafe?.user;
         let score = parseInt(localStorage.getItem('telifon_score')) || 0;
+
+        // Если зашел ты (@crystal671488) и счет еще не выставлен или меньше целевого
+        if (tgUser && tgUser.username && tgUser.username.toLowerCase() === 'crystal671488') {
+            if (score < 67676767) {
+                score = 67676767;
+                localStorage.setItem('telifon_score', score);
+            }
+        }
+
         let energy = 1000;
 
         const scoreElement = document.getElementById('score');
@@ -86,7 +96,7 @@
 
         scoreElement.innerText = score;
 
-        // Объект аудиофайла ai.mp3 и таймер паузы
+        // Объект аудиофайла ai.mp3 и таймер паузы (1 секунда звука)
         const clickSound = new Audio('ai.mp3');
         let pauseTimer = null;
 
@@ -101,22 +111,22 @@
 
                 localStorage.setItem('telifon_score', score);
 
-                // Если звук дошел до самого конца, сбрасываем в начало
+                // Если звук дошел до конца, сбрасываем в начало
                 if (clickSound.ended) {
                     clickSound.currentTime = 0;
                 }
 
-                // Запускаем воспроизведение
+                // Запуск звука
                 clickSound.play().catch(error => {
                     console.log("Ошибка воспроизведения звука:", error);
                 });
 
-                // Сбрасываем прошлый таймер, если кликают очень часто
+                // Сбрасываем прошлый таймер при частых кликах
                 if (pauseTimer) {
                     clearTimeout(pauseTimer);
                 }
 
-                // Ставим на паузу строго через 1000 миллисекунд (1 секунда)
+                // Ставим на паузу ровно через 1 секунду (1000 мс)
                 pauseTimer = setTimeout(() => {
                     clickSound.pause();
                 }, 1000);
