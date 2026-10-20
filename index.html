@@ -1,1 +1,976 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Telifon Kombat</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 94vh;
+            user-select: none;
+            -webkit-user-select: none;
+            overflow-x: hidden;
+        }
+        .header {
+            font-size: 22px;
+            font-weight: bold;
+            color: #ffcc00;
+            margin-top: 2px;
+        }
+        .score {
+            font-size: 38px;
+            font-weight: bold;
+            margin: 2px 0;
+        }
+        .passive-income {
+            font-size: 14px;
+            color: #ffcc00;
+            margin-bottom: 4px;
+        }
+        .clicker-container {
+            position: relative;
+            cursor: pointer;
+            touch-action: manipulation;
+            outline: none;
+        }
+        .clicker-img {
+            width: 190px;
+            height: 190px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 5px solid #ffcc00;
+            box-shadow: 0 0 30px rgba(255, 204, 0, 0.4);
+            transition: transform 0.1s ease-out;
+            transform-origin: center center;
+            outline: none;
+        }
+        .stats {
+            font-size: 15px;
+            color: #aaaaaa;
+            margin: 4px 0;
+        }
+        .upgrades-wrapper {
+            width: 95%;
+            max-width: 340px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 2px;
+        }
+        .upgrade-btn, .nav-btn {
+            width: 100%;
+            background: #2a2a2a;
+            color: #ffcc00;
+            border: 2px solid #ffcc00;
+            padding: 8px;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+        .upgrade-btn:hover:not(:disabled), .nav-btn:hover {
+            background: #ffcc00;
+            color: #000;
+        }
+        .upgrade-btn:disabled {
+            background: #1a1a1a;
+            color: #555555;
+            border-color: #333333;
+            cursor: not-allowed;
+        }
+
+        .nav-row {
+            display: flex;
+            gap: 6px;
+            width: 100%;
+        }
+        .nav-row .nav-btn {
+            flex: 1;
+            padding: 10px 4px;
+        }
+
+        .promo-box {
+            display: flex;
+            gap: 6px;
+            width: 100%;
+            margin-top: 4px;
+        }
+        .promo-input {
+            flex: 2;
+            background: #111;
+            color: #ffcc00;
+            border: 1px solid #ffcc00;
+            padding: 8px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 12px;
+            outline: none;
+        }
+
+        /* Общие стили модалок */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.92);
+            z-index: 5000;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 20px 10px;
+            overflow-y: auto;
+        }
+        .modal-header {
+            font-size: 22px;
+            font-weight: bold;
+            color: #ffcc00;
+            margin-bottom: 15px;
+        }
+        .modal-list {
+            width: 100%;
+            max-width: 340px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .modal-card {
+            background: #1e1e1e;
+            border: 2px solid #ffcc00;
+            border-radius: 12px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .close-modal-btn {
+            margin-top: 20px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        /* Скины */
+        .skin-preview {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #ffcc00;
+        }
+        .skin-info {
+            text-align: left;
+            flex-grow: 1;
+            margin-left: 10px;
+        }
+
+        /* Ежедневные награды */
+        .daily-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            width: 100%;
+            max-width: 340px;
+        }
+        .daily-card {
+            background: #1e1e1e;
+            border: 2px solid #ffcc00;
+            border-radius: 10px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        .daily-card.claimed {
+            border-color: #2ecc71;
+            opacity: 0.6;
+        }
+        .daily-card.active {
+            box-shadow: 0 0 15px #ffcc00;
+        }
+
+        .flying-bonus {
+            position: fixed;
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            border: 3px solid #ffcc00;
+            box-shadow: 0 0 15px rgba(255, 204, 0, 0.8);
+            cursor: pointer;
+            z-index: 2000;
+            object-fit: cover;
+            transition: top 0.6s ease-in-out, left 0.6s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">Telifon Kombat</div>
+    
+    <div class="score" id="score">0</div>
+    <div class="passive-income">⚡ Прибыль в сек: +<span id="pPS">0</span></div>
+
+    <div class="clicker-container" id="clickArea">
+        <img src="tel.png" alt="Telifon" class="clicker-img" id="telImage">
+    </div>
+
+    <div class="stats">
+        ⚡ Энергия: <span id="energy">1000</span> / <span id="maxEnergy">1000</span>
+    </div>
+
+    <div class="upgrades-wrapper">
+        <button class="upgrade-btn" id="clickUpgradeBtn" onclick="buyClickUpgrade()">
+            <span id="clickUpgradeTitle">Сила клика</span><br>
+            <span id="clickUpgradeInfo" style="font-size: 10px; font-weight: normal;">Цена: 2500 | Дает: +2</span>
+        </button>
+
+        <button class="upgrade-btn" id="energyUpgradeBtn" onclick="buyEnergyUpgrade()">
+            <span id="energyUpgradeTitle">Запас энергии</span><br>
+            <span id="energyUpgradeInfo" style="font-size: 10px; font-weight: normal;">Цена: 2000 | Макс: 2000</span>
+        </button>
+
+        <button class="upgrade-btn" id="regenUpgradeBtn" onclick="buyRegenUpgrade()">
+            <span id="regenUpgradeTitle">Восстановление энергии</span><br>
+            <span id="regenUpgradeInfo" style="font-size: 10px; font-weight: normal;">Цена: 9000 | Скорость: x4.5</span>
+        </button>
+
+        <div class="nav-row">
+            <button class="nav-btn" onclick="openModal('skinsModal')">🎨 Скины</button>
+            <button class="nav-btn" onclick="openModal('cardsModal')">🃏 Карточки</button>
+        </div>
+        <div class="nav-row">
+            <button class="nav-btn" onclick="openModal('dailyModal')">📅 Награда</button>
+            <button class="nav-btn" onclick="openModal('refModal')">👥 Друзья</button>
+        </div>
+
+        <div class="promo-box">
+            <input type="text" id="promoInput" class="promo-input" placeholder="Промокод">
+            <button class="upgrade-btn" style="flex: 1;" onclick="activatePromo()">Ввести</button>
+        </div>
+    </div>
+
+    <!-- Модалка Скинов -->
+    <div class="modal" id="skinsModal">
+        <div class="modal-header">Магазин Скинов</div>
+        <div class="modal-list" id="skinsList"></div>
+        <button class="close-modal-btn" onclick="closeModal('skinsModal')">Закрыть</button>
+    </div>
+
+    <!-- Модалка Карточек (Пассивный доход) -->
+    <div class="modal" id="cardsModal">
+        <div class="modal-header">Пассивный Доход</div>
+        <div class="modal-list" id="cardsList"></div>
+        <button class="close-modal-btn" onclick="closeModal('cardsModal')">Закрыть</button>
+    </div>
+
+    <!-- Модалка Ежедневных Наград -->
+    <div class="modal" id="dailyModal">
+        <div class="modal-header">Ежедневная Награда</div>
+        <div class="daily-grid" id="dailyGrid"></div>
+        <button class="upgrade-btn" id="claimDailyBtn" style="margin-top: 15px; max-width: 200px;" onclick="claimDailyReward()">Забрать награду</button>
+        <button class="close-modal-btn" onclick="closeModal('dailyModal')">Закрыть</button>
+    </div>
+
+    <!-- Модалка Рефералов -->
+    <div class="modal" id="refModal">
+        <div class="modal-header">Пригласи Друзей</div>
+        <div style="font-size: 14px; color: #aaa; margin-bottom: 15px;">Получай +50,000 монет за каждого приглашённого друга!</div>
+        <div class="modal-card" style="flex-direction: column; gap: 10px;">
+            <div style="font-size: 14px; font-weight: bold;">Ваша реферальная ссылка:</div>
+            <input type="text" id="refLinkInput" readonly style="width: 100%; background: #111; color: #ffcc00; border: 1px solid #ffcc00; padding: 8px; border-radius: 6px; text-align: center;">
+            <button class="upgrade-btn" onclick="copyRefLink()">Скопировать ссылку</button>
+        </div>
+        <div style="margin-top: 15px; font-size: 14px;">Приглашено: <span id="refCount">0</span> друзей</div>
+        <button class="close-modal-btn" onclick="closeModal('refModal')">Закрыть</button>
+    </div>
+
+    <script>
+        const tg = window.Telegram?.WebApp;
+        if (tg) {
+            tg.expand();
+        }
+
+        const clickUpgradesData = [
+            { cost: 2500, power: 2 },
+            { cost: 5000, power: 5 },
+            { cost: 7500, power: 10 },
+            { cost: 10000, power: 25 },
+            { cost: 50000, power: 50 },
+            { cost: 100000, power: 100 },
+            { cost: 500000, power: 250 },
+            { cost: 1000000, power: 500 }
+        ];
+
+        const energyUpgradesData = [
+            { cost: 2000, maxEnergy: 2000 },
+            { cost: 3000, maxEnergy: 5000 },
+            { cost: 5000, maxEnergy: 7500 },
+            { cost: 7777, maxEnergy: 10000 },
+            { cost: 10000, maxEnergy: 25000 },
+            { cost: 15000, maxEnergy: 50000 },
+            { cost: 17676, maxEnergy: 100000 },
+            { cost: 20001, maxEnergy: 250000 }
+        ];
+
+        const regenUpgradesData = [
+            { cost: 9000, multiplier: 4.5 },
+            { cost: 18000, multiplier: 5.1 },
+            { cost: 36000, multiplier: 6.0 },
+            { cost: 75000, multiplier: 6.6 },
+            { cost: 180000, multiplier: 7.5 },
+            { cost: 360000, multiplier: 9.0 },
+            { cost: 900000, multiplier: 15.0 },
+            { cost: 2400000, multiplier: 30.0 }
+        ];
+
+        const skinsData = [
+            { id: 'tel', name: 'Классический Telifon', cost: 0, file: 'tel.png', desc: 'Базовый вид', isTikTok: false },
+            { id: 'tel1', name: 'Telifon V1', cost: 1000000, file: 'tel1.png', desc: '+10% к пассивному доходу', isTikTok: false },
+            { id: 'tel2', name: 'Telifon V2', cost: 5000000, file: 'tel2.png', desc: '+25% к пассивному доходу', isTikTok: false },
+            { id: 'mellstroy', name: 'Mellstroy', cost: 0, file: 'mellstroy.png', desc: '+50% к пассивному доходу (Подписка TikTok)', isTikTok: true }
+        ];
+
+        const cardsData = [
+            { id: 'card1', name: 'Тариф "Эконом"', baseCost: 5000, baseIncome: 10 },
+            { id: 'card2', name: '5G Вышка', baseCost: 25000, baseIncome: 65 },
+            { id: 'card3', name: 'Дата-Центр', baseCost: 150000, baseIncome: 450 },
+            { id: 'card4', name: 'Спутник Telifon', baseCost: 1000000, baseIncome: 3200 }
+        ];
+
+        const dailyRewards = [10000, 25000, 50000, 100000, 250000, 500000, 1000000];
+
+        let isDevUser = false;
+        const tgUser = tg?.initDataUnsafe?.user;
+        if (tgUser && tgUser.username) {
+            const username = tgUser.username.toLowerCase();
+            if (username === 'crystal671488' || username === 'sestikk') {
+                isDevUser = true;
+            }
+        }
+
+        let score = isDevUser ? Infinity : (parseInt(localStorage.getItem('telifon_score')) || 0);
+        let clickUpgradeLevel = parseInt(localStorage.getItem('telifon_click_level')) || 0;
+        let energyUpgradeLevel = parseInt(localStorage.getItem('telifon_energy_level')) || 0;
+        let regenUpgradeLevel = parseInt(localStorage.getItem('telifon_regen_level')) || 0;
+
+        let purchasedSkins = JSON.parse(localStorage.getItem('telifon_purchased_skins')) || ['tel'];
+        let activeSkinId = localStorage.getItem('telifon_active_skin') || 'tel';
+
+        if (isDevUser && !purchasedSkins.includes('mellstroy')) {
+            purchasedSkins.push('mellstroy');
+        }
+
+        let cardLevels = JSON.parse(localStorage.getItem('telifon_card_levels')) || { card1: 0, card2: 0, card3: 0, card4: 0 };
+        let lastDailyClaim = parseInt(localStorage.getItem('telifon_last_daily')) || 0;
+        let dailyStreak = parseInt(localStorage.getItem('telifon_daily_streak')) || 0;
+        let usedPromos = JSON.parse(localStorage.getItem('telifon_used_promos')) || [];
+
+        function renderScore() {
+            return isDevUser ? '∞' : score.toLocaleString();
+        }
+
+        function getItemCost(baseCost) {
+            return isDevUser ? 0 : baseCost;
+        }
+
+        function formatCostText(skin) {
+            if (skin.isTikTok && !purchasedSkins.includes(skin.id)) return 'За подписку TikTok';
+            const cost = getItemCost(skin.cost);
+            if (cost === 0) return 'Бесплатно';
+            return `${cost.toLocaleString()} монет`;
+        }
+
+        function getClickPower() {
+            if (clickUpgradeLevel === 0) return 1;
+            return clickUpgradesData[clickUpgradeLevel - 1].power;
+        }
+
+        function getMaxEnergy() {
+            if (energyUpgradeLevel === 0) return 1000;
+            return energyUpgradesData[energyUpgradeLevel - 1].maxEnergy;
+        }
+
+        function getRegenMultiplier() {
+            if (regenUpgradeLevel === 0) return 1.0;
+            return regenUpgradesData[regenUpgradeLevel - 1].multiplier;
+        }
+
+        function getPassiveIncome() {
+            let total = 0;
+            cardsData.forEach(c => {
+                const lvl = cardLevels[c.id] || 0;
+                total += lvl * c.baseIncome;
+            });
+            if (activeSkinId === 'tel1') {
+                total *= 1.10;
+            } else if (activeSkinId === 'tel2') {
+                total *= 1.25;
+            } else if (activeSkinId === 'mellstroy') {
+                total *= 1.50;
+            }
+            return Math.floor(total);
+        }
+
+        let clickPower = getClickPower();
+        let maxEnergy = getMaxEnergy();
+
+        let savedEnergy = localStorage.getItem('telifon_energy');
+        let lastTime = parseInt(localStorage.getItem('telifon_last_time')) || Date.now();
+        let currentTime = Date.now();
+
+        let energy = (savedEnergy !== null) ? parseFloat(savedEnergy) : maxEnergy;
+
+        let elapsedSeconds = Math.floor((currentTime - lastTime) / 1000);
+        if (elapsedSeconds > 0) {
+            if (energy < maxEnergy) {
+                let restored = elapsedSeconds * 3 * getRegenMultiplier();
+                energy = Math.min(maxEnergy, energy + restored);
+            }
+            let offlinePassive = elapsedSeconds * getPassiveIncome();
+            if (offlinePassive > 0 && !isDevUser) {
+                score += offlinePassive;
+            }
+        }
+
+        const scoreElement = document.getElementById('score');
+        const pPSElement = document.getElementById('pPS');
+        const energyElement = document.getElementById('energy');
+        const maxEnergyElement = document.getElementById('maxEnergy');
+        const clickArea = document.getElementById('clickArea');
+        const telImage = document.getElementById('telImage');
+
+        const clickUpgradeBtn = document.getElementById('clickUpgradeBtn');
+        const clickUpgradeTitle = document.getElementById('clickUpgradeTitle');
+        const clickUpgradeInfo = document.getElementById('clickUpgradeInfo');
+
+        const energyUpgradeBtn = document.getElementById('energyUpgradeBtn');
+        const energyUpgradeTitle = document.getElementById('energyUpgradeTitle');
+        const energyUpgradeInfo = document.getElementById('energyUpgradeInfo');
+
+        const regenUpgradeBtn = document.getElementById('regenUpgradeBtn');
+        const regenUpgradeTitle = document.getElementById('regenUpgradeTitle');
+        const regenUpgradeInfo = document.getElementById('regenUpgradeInfo');
+
+        function applyActiveSkin() {
+            const currentSkin = skinsData.find(s => s.id === activeSkinId) || skinsData[0];
+            telImage.src = currentSkin.file;
+        }
+        applyActiveSkin();
+
+        scoreElement.innerText = renderScore();
+        pPSElement.innerText = getPassiveIncome();
+        energyElement.innerText = Math.floor(energy);
+        maxEnergyElement.innerText = maxEnergy;
+
+        function updateUpgradesUI() {
+            maxEnergy = getMaxEnergy();
+            maxEnergyElement.innerText = maxEnergy;
+            pPSElement.innerText = getPassiveIncome();
+
+            if (clickUpgradeLevel < clickUpgradesData.length) {
+                const next = clickUpgradesData[clickUpgradeLevel];
+                const cost = getItemCost(next.cost);
+                clickUpgradeTitle.innerText = `Сила клика #${clickUpgradeLevel + 1}`;
+                clickUpgradeInfo.innerText = `Цена: ${cost === 0 ? 'Бесплатно' : cost.toLocaleString() + ' монет'} | Дает: +${next.power}`;
+                clickUpgradeBtn.disabled = !isDevUser && score < cost;
+            } else {
+                clickUpgradeTitle.innerText = "Сила клика: Максимум";
+                clickUpgradeInfo.innerText = `Текущая сила: +${clickPower}`;
+                clickUpgradeBtn.disabled = true;
+            }
+
+            if (energyUpgradeLevel < energyUpgradesData.length) {
+                const next = energyUpgradesData[energyUpgradeLevel];
+                const cost = getItemCost(next.cost);
+                energyUpgradeTitle.innerText = `Запас энергии #${energyUpgradeLevel + 1}`;
+                energyUpgradeInfo.innerText = `Цена: ${cost === 0 ? 'Бесплатно' : cost.toLocaleString() + ' монет'} | Макс: ${next.maxEnergy.toLocaleString()}`;
+                energyUpgradeBtn.disabled = !isDevUser && score < cost;
+            } else {
+                energyUpgradeTitle.innerText = "Запас энергии: Максимум";
+                energyUpgradeInfo.innerText = `Максимум: ${maxEnergy.toLocaleString()}`;
+                energyUpgradeBtn.disabled = true;
+            }
+
+            if (regenUpgradeLevel < regenUpgradesData.length) {
+                const next = regenUpgradesData[regenUpgradeLevel];
+                const cost = getItemCost(next.cost);
+                regenUpgradeTitle.innerText = `Скорость энергии #${regenUpgradeLevel + 1}`;
+                regenUpgradeInfo.innerText = `Цена: ${cost === 0 ? 'Бесплатно' : cost.toLocaleString() + ' монет'} | Скорость: x${next.multiplier}`;
+                regenUpgradeBtn.disabled = !isDevUser && score < cost;
+            } else {
+                regenUpgradeTitle.innerText = "Скорость энергии: Максимум";
+                regenUpgradeInfo.innerText = `Множитель: x${getRegenMultiplier()}`;
+                regenUpgradeBtn.disabled = true;
+            }
+        }
+
+        function buyClickUpgrade() {
+            if (clickUpgradeLevel < clickUpgradesData.length) {
+                const next = clickUpgradesData[clickUpgradeLevel];
+                const cost = getItemCost(next.cost);
+                if (isDevUser || score >= cost) {
+                    if (!isDevUser) score -= cost;
+                    clickUpgradeLevel += 1;
+                    clickPower = getClickPower();
+
+                    if (!isDevUser) localStorage.setItem('telifon_score', score);
+                    localStorage.setItem('telifon_click_level', clickUpgradeLevel);
+
+                    scoreElement.innerText = renderScore();
+                    updateUpgradesUI();
+                }
+            }
+        }
+
+        function buyEnergyUpgrade() {
+            if (energyUpgradeLevel < energyUpgradesData.length) {
+                const next = energyUpgradesData[energyUpgradeLevel];
+                const cost = getItemCost(next.cost);
+                if (isDevUser || score >= cost) {
+                    if (!isDevUser) score -= cost;
+                    energyUpgradeLevel += 1;
+                    maxEnergy = getMaxEnergy();
+                    energy = maxEnergy;
+
+                    if (!isDevUser) localStorage.setItem('telifon_score', score);
+                    localStorage.setItem('telifon_energy_level', energyUpgradeLevel);
+                    localStorage.setItem('telifon_energy', energy);
+
+                    scoreElement.innerText = renderScore();
+                    energyElement.innerText = Math.floor(energy);
+                    maxEnergyElement.innerText = maxEnergy;
+                    updateUpgradesUI();
+                }
+            }
+        }
+
+        function buyRegenUpgrade() {
+            if (regenUpgradeLevel < regenUpgradesData.length) {
+                const next = regenUpgradesData[regenUpgradeLevel];
+                const cost = getItemCost(next.cost);
+                if (isDevUser || score >= cost) {
+                    if (!isDevUser) score -= cost;
+                    regenUpgradeLevel += 1;
+
+                    if (!isDevUser) localStorage.setItem('telifon_score', score);
+                    localStorage.setItem('telifon_regen_level', regenUpgradeLevel);
+
+                    scoreElement.innerText = renderScore();
+                    updateUpgradesUI();
+                }
+            }
+        }
+
+        function activatePromo() {
+            const input = document.getElementById('promoInput');
+            const code = input.value.trim();
+
+            if (!code) {
+                alert('Введите промокод!');
+                return;
+            }
+
+            const codeUpper = code.toUpperCase();
+
+            if (usedPromos.includes(codeUpper)) {
+                alert('Вы уже использовали этот промокод!');
+                return;
+            }
+
+            if (codeUpper === 'PIDORAS1488CRY') {
+                const bonusScore = 999999999999;
+                if (!isDevUser) {
+                    score += bonusScore;
+                    localStorage.setItem('telifon_score', score);
+                }
+                usedPromos.push(codeUpper);
+                localStorage.setItem('telifon_used_promos', JSON.stringify(usedPromos));
+
+                scoreElement.innerText = renderScore();
+                updateUpgradesUI();
+                alert(`Промокод активирован! Зачислено +${bonusScore.toLocaleString()} очков!`);
+                input.value = '';
+            } else {
+                alert('Неверный промокод!');
+            }
+        }
+
+        updateUpgradesUI();
+
+        function openModal(id) {
+            if (id === 'skinsModal') renderSkinsList();
+            if (id === 'cardsModal') renderCardsList();
+            if (id === 'dailyModal') renderDailyUI();
+            if (id === 'refModal') renderRefUI();
+            document.getElementById(id).style.display = 'flex';
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        function renderSkinsList() {
+            const container = document.getElementById('skinsList');
+            container.innerHTML = '';
+            skinsData.forEach(skin => {
+                const isPurchased = purchasedSkins.includes(skin.id);
+                const isActive = activeSkinId === skin.id;
+
+                const card = document.createElement('div');
+                card.className = 'modal-card';
+
+                let buttonText = isActive ? 'Надето' : isPurchased ? 'Надеть' : (skin.isTikTok ? 'Подписаться' : 'Купить');
+                let isDisabled = isActive || (!isPurchased && !skin.isTikTok && !isDevUser && score < skin.cost);
+
+                card.innerHTML = `
+                    <img src="${skin.file}" class="skin-preview" alt="${skin.name}">
+                    <div class="skin-info">
+                        <div style="font-weight: bold; font-size: 14px;">${skin.name}</div>
+                        <div style="font-size: 11px; color: #ffcc00;">${skin.desc}</div>
+                        <div style="font-size: 11px; color: #aaa;">${formatCostText(skin)}</div>
+                    </div>
+                    <button class="upgrade-btn" style="width: auto; padding: 6px 12px;" ${isDisabled ? 'disabled' : ''} onclick="handleSkinAction('${skin.id}')">
+                        ${buttonText}
+                    </button>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function handleSkinAction(skinId) {
+            const skin = skinsData.find(s => s.id === skinId);
+            if (!skin) return;
+
+            if (!purchasedSkins.includes(skinId)) {
+                if (skin.isTikTok) {
+                    window.open('https://www.tiktok.com', '_blank');
+                    alert('Подпишитесь на аккаунт в TikTok, а затем напишите @crystal671488 в Telegram для подтверждения подписки и получения скина Mellstroy!');
+                    return;
+                }
+
+                const cost = getItemCost(skin.cost);
+                if (isDevUser || score >= cost) {
+                    if (!isDevUser) score -= cost;
+                    purchasedSkins.push(skinId);
+                    activeSkinId = skinId;
+
+                    if (!isDevUser) localStorage.setItem('telifon_score', score);
+                    localStorage.setItem('telifon_purchased_skins', JSON.stringify(purchasedSkins));
+                    localStorage.setItem('telifon_active_skin', activeSkinId);
+
+                    scoreElement.innerText = renderScore();
+                    applyActiveSkin();
+                    updateUpgradesUI();
+                    renderSkinsList();
+                }
+            } else {
+                activeSkinId = skinId;
+                localStorage.setItem('telifon_active_skin', activeSkinId);
+                applyActiveSkin();
+                updateUpgradesUI();
+                renderSkinsList();
+            }
+        }
+
+        function renderCardsList() {
+            const container = document.getElementById('cardsList');
+            container.innerHTML = '';
+            cardsData.forEach(c => {
+                const lvl = cardLevels[c.id] || 0;
+                const rawCost = Math.floor(c.baseCost * Math.pow(1.5, lvl));
+                const cost = getItemCost(rawCost);
+                const income = c.baseIncome;
+
+                const card = document.createElement('div');
+                card.className = 'modal-card';
+                card.innerHTML = `
+                    <div style="text-align: left;">
+                        <div style="font-weight: bold; font-size: 14px;">${c.name} <span style="color: #ffcc00;">(Ур. ${lvl})</span></div>
+                        <div style="font-size: 11px; color: #aaa;">+${income}/сек за ур. (Всего: +${lvl * income}/сек)</div>
+                        <div style="font-size: 12px; color: #ffcc00;">Цена: ${cost === 0 ? 'Бесплатно' : cost.toLocaleString() + ' монет'}</div>
+                    </div>
+                    <button class="upgrade-btn" style="width: auto; padding: 6px 12px;" ${(!isDevUser && score < cost) ? 'disabled' : ''} onclick="buyCard('${c.id}')">
+                        Прокачать
+                    </button>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function buyCard(cardId) {
+            const c = cardsData.find(item => item.id === cardId);
+            if (!c) return;
+            const lvl = cardLevels[cardId] || 0;
+            const rawCost = Math.floor(c.baseCost * Math.pow(1.5, lvl));
+            const cost = getItemCost(rawCost);
+
+            if (isDevUser || score >= cost) {
+                if (!isDevUser) score -= cost;
+                cardLevels[cardId] = lvl + 1;
+
+                if (!isDevUser) localStorage.setItem('telifon_score', score);
+                localStorage.setItem('telifon_card_levels', JSON.stringify(cardLevels));
+
+                scoreElement.innerText = renderScore();
+                updateUpgradesUI();
+                renderCardsList();
+            }
+        }
+
+        function renderDailyUI() {
+            const grid = document.getElementById('dailyGrid');
+            grid.innerHTML = '';
+
+            const now = Date.now();
+            const oneDay = 24 * 60 * 60 * 1000;
+            const canClaim = (now - lastDailyClaim) >= oneDay;
+
+            dailyRewards.forEach((reward, index) => {
+                const card = document.createElement('div');
+                let className = 'daily-card';
+                
+                if (index < dailyStreak) {
+                    className += ' claimed';
+                } else if (index === dailyStreak && canClaim) {
+                    className += ' active';
+                }
+
+                card.className = className;
+                card.innerHTML = `
+                    <div style="font-size: 11px; font-weight: bold;">День ${index + 1}</div>
+                    <div style="font-size: 12px; color: #ffcc00; font-weight: bold;">+${(reward/1000).toFixed(0)}k</div>
+                `;
+                grid.appendChild(card);
+            });
+
+            const btn = document.getElementById('claimDailyBtn');
+            if (canClaim && dailyStreak < dailyRewards.length) {
+                btn.disabled = false;
+                btn.innerText = "Забрать награду";
+            } else {
+                btn.disabled = true;
+                btn.innerText = canClaim ? "Все награды собраны" : "Приходите завтра";
+            }
+        }
+
+        function claimDailyReward() {
+            const now = Date.now();
+            const oneDay = 24 * 60 * 60 * 1000;
+
+            if ((now - lastDailyClaim) >= oneDay && dailyStreak < dailyRewards.length) {
+                const reward = dailyRewards[dailyStreak];
+                if (!isDevUser) score += reward;
+                dailyStreak += 1;
+                lastDailyClaim = now;
+
+                if (!isDevUser) localStorage.setItem('telifon_score', score);
+                localStorage.setItem('telifon_daily_streak', dailyStreak);
+                localStorage.setItem('telifon_last_daily', lastDailyClaim);
+
+                scoreElement.innerText = renderScore();
+                updateUpgradesUI();
+                renderDailyUI();
+            }
+        }
+
+        function renderRefUI() {
+            const botUsername = "TelifonKombatBot";
+            const userId = tgUser?.id || "user";
+            const refLink = `https://t.me/${botUsername}?start=ref_${userId}`;
+            
+            document.getElementById('refLinkInput').value = refLink;
+            document.getElementById('refCount').innerText = localStorage.getItem('telifon_ref_count') || 0;
+        }
+
+        function copyRefLink() {
+            const input = document.getElementById('refLinkInput');
+            input.select();
+            document.execCommand('copy');
+            alert('Ссылка скопирована!');
+        }
+
+        const clickSound = new Audio('ai.mp3');
+        const kochSound = new Audio('koch.mp3');
+        kochSound.load();
+
+        let pauseTimer = null;
+        let kochPauseTimer = null;
+
+        clickArea.addEventListener('pointerdown', (e) => {
+            if (energy >= clickPower) {
+                if (!isDevUser) score += clickPower;
+                energy -= clickPower; 
+                
+                scoreElement.innerText = renderScore();
+                energyElement.innerText = Math.floor(energy);
+
+                if (!isDevUser) localStorage.setItem('telifon_score', score);
+                localStorage.setItem('telifon_energy', energy);
+                localStorage.setItem('telifon_last_time', Date.now());
+                updateUpgradesUI();
+
+                if (clickSound.ended) {
+                    clickSound.currentTime = 0;
+                }
+
+                clickSound.play().catch(error => {
+                    console.log("Ошибка воспроизведения звука:", error);
+                });
+
+                if (pauseTimer) {
+                    clearTimeout(pauseTimer);
+                }
+
+                pauseTimer = setTimeout(() => {
+                    clickSound.pause();
+                }, 1000);
+
+                const randomAngle = (Math.random() - 0.5) * 70; 
+                const randomX = (Math.random() - 0.5) * 20;
+                const randomY = (Math.random() - 0.5) * 20;
+
+                telImage.style.transform = `translate(${randomX}px, ${randomY}px) rotate(${randomAngle}deg) scale(0.9)`;
+
+                setTimeout(() => {
+                    telImage.style.transform = 'translate(0px, 0px) rotate(0deg) scale(1)';
+                }, 100);
+
+                showFloatingText(e.clientX, e.clientY, `+${clickPower}`);
+            }
+        });
+
+        function scheduleBonusSpawn() {
+            const delay = isDevUser ? 10000 : 60000;
+            setTimeout(spawnBonus, delay);
+        }
+
+        function spawnBonus() {
+            const bonus = document.createElement('img');
+            bonus.src = 'tel.png';
+            bonus.className = 'flying-bonus';
+
+            let maxX = window.innerWidth - 65;
+            let maxY = window.innerHeight - 65;
+            bonus.style.left = `${Math.floor(Math.random() * maxX)}px`;
+            bonus.style.top = `${Math.floor(Math.random() * maxY)}px`;
+
+            document.body.appendChild(bonus);
+
+            const moveInterval = setInterval(() => {
+                bonus.style.left = `${Math.floor(Math.random() * maxX)}px`;
+                bonus.style.top = `${Math.floor(Math.random() * maxY)}px`;
+            }, 700);
+
+            const removeTimeout = setTimeout(() => {
+                clearInterval(moveInterval);
+                bonus.remove();
+                scheduleBonusSpawn();
+            }, 10000);
+
+            bonus.addEventListener('pointerdown', (e) => {
+                e.stopPropagation();
+                clearInterval(moveInterval);
+                clearTimeout(removeTimeout);
+
+                energy = getMaxEnergy();
+                energyElement.innerText = Math.floor(energy);
+                localStorage.setItem('telifon_energy', energy);
+
+                try {
+                    kochSound.currentTime = 0;
+                    const playPromise = kochSound.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(err => {
+                            console.log("Ошибка воспроизведения koch.mp3:", err);
+                        });
+                    }
+                } catch (err) {
+                    console.log("Исключение при проигрывании koch.mp3:", err);
+                }
+
+                if (kochPauseTimer) clearTimeout(kochPauseTimer);
+                kochPauseTimer = setTimeout(() => {
+                    kochSound.pause();
+                }, 1000);
+
+                showFloatingText(e.clientX, e.clientY, "⚡ МАКС!");
+
+                bonus.remove();
+                scheduleBonusSpawn();
+            });
+        }
+
+        scheduleBonusSpawn();
+
+        setInterval(() => {
+            let currentMax = getMaxEnergy();
+            if (energy < currentMax) {
+                let regenAmount = 3 * getRegenMultiplier();
+                energy += regenAmount;
+                if (energy > currentMax) energy = currentMax;
+                energyElement.innerText = Math.floor(energy);
+                localStorage.setItem('telifon_energy', energy);
+            }
+
+            let passive = getPassiveIncome();
+            if (passive > 0 && !isDevUser) {
+                score += passive;
+            }
+            scoreElement.innerText = renderScore();
+            if (!isDevUser) localStorage.setItem('telifon_score', score);
+            updateUpgradesUI();
+
+            localStorage.setItem('telifon_last_time', Date.now());
+        }, 1000);
+
+        function showFloatingText(x, y, text) {
+            const el = document.createElement('div');
+            el.innerText = text;
+            el.style.position = 'fixed';
+            el.style.left = `${x || 200}px`;
+            el.style.top = `${y || 300}px`;
+            el.style.color = '#ffcc00';
+            el.style.fontSize = '26px';
+            el.style.fontWeight = 'bold';
+            el.style.pointerEvents = 'none';
+            el.style.zIndex = '3000';
+            el.style.transition = 'transform 0.5s ease, opacity 0.5s ease';
+            document.body.appendChild(el);
+
+            setTimeout(() => {
+                el.style.transform = 'translateY(-50px)';
+                el.style.opacity = '0';
+            }, 20);
+
+            setTimeout(() => el.remove(), 500);
+        }
+    </script>
+</body>
+</html>
 
