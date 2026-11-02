@@ -243,8 +243,8 @@
         }
         .wheel-container {
             position: relative;
-            width: 160px;
-            height: 160px;
+            width: 170px;
+            height: 170px;
             margin: 5px auto;
         }
         .wheel {
@@ -253,17 +253,15 @@
             border-radius: 50%;
             border: 4px solid #ffcc00;
             background: conic-gradient(
-                #e74c3c 0deg 72deg,
-                #3498db 72deg 144deg,
-                #9b59b6 144deg 216deg,
-                #e67e22 216deg 288deg,
-                #2ecc71 288deg 360deg
+                #e74c3c 0deg 72deg,    /* x2 - Красный */
+                #3498db 72deg 144deg,  /* x3 - Синий */
+                #9b59b6 144deg 216deg, /* x5 - Фиолетовый */
+                #e67e22 216deg 288deg, /* x10 - Оранжевый */
+                #2ecc71 288deg 360deg  /* x25 - Зеленый */
             );
             position: relative;
             transition: transform 3s cubic-bezier(0.15, 0.9, 0.2, 1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            overflow: hidden;
         }
         .wheel-pointer {
             position: absolute;
@@ -279,6 +277,9 @@
         }
         .wheel-center {
             position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             width: 45px;
             height: 45px;
             background: #121212;
@@ -287,10 +288,35 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: bold;
             color: #ffcc00;
+            z-index: 5;
         }
+        
+        /* Текст внутри секторов колеса */
+        .sector-label {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 20px;
+            margin-top: -10px;
+            margin-left: -50%;
+            transform-origin: center center;
+            font-size: 12px;
+            font-weight: bold;
+            color: #ffffff;
+            text-shadow: 1px 1px 2px #000;
+            pointer-events: none;
+        }
+        /* Позиционирование цифр на секторах */
+        .label-2  { transform: rotate(36deg) translateY(-58px); }
+        .label-3  { transform: rotate(108deg) translateY(-58px); }
+        .label-5  { transform: rotate(180deg) translateY(-58px); }
+        .label-10 { transform: rotate(252deg) translateY(-58px); }
+        .label-25 { transform: rotate(324deg) translateY(-58px); }
+
         .multiplier-select {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
@@ -299,18 +325,27 @@
         }
         .mult-btn {
             background: #2a2a2a;
-            color: #ffcc00;
-            border: 1px solid #ffcc00;
+            color: #fff;
+            border: 2px solid transparent;
             padding: 6px 0;
             border-radius: 6px;
             font-weight: bold;
             font-size: 12px;
             cursor: pointer;
+            transition: all 0.2s;
         }
-        .mult-btn.selected {
-            background: #ffcc00;
-            color: #000;
-        }
+        .mult-btn.btn-x2 { border-color: #e74c3c; }
+        .mult-btn.btn-x3 { border-color: #3498db; }
+        .mult-btn.btn-x5 { border-color: #9b59b6; }
+        .mult-btn.btn-x10 { border-color: #e67e22; }
+        .mult-btn.btn-x25 { border-color: #2ecc71; }
+
+        .mult-btn.selected.btn-x2 { background: #e74c3c; color: #fff; }
+        .mult-btn.selected.btn-x3 { background: #3498db; color: #fff; }
+        .mult-btn.selected.btn-x5 { background: #9b59b6; color: #fff; }
+        .mult-btn.selected.btn-x10 { background: #e67e22; color: #fff; }
+        .mult-btn.selected.btn-x25 { background: #2ecc71; color: #fff; }
+
         .casino-display {
             font-size: 14px;
             font-weight: bold;
@@ -409,19 +444,24 @@
     <div class="modal" id="casinoModal">
         <div class="modal-header">🎰 Колесо Фортуны</div>
         <div class="casino-box">
-            <div style="font-size: 11px; color: #aaa;">Выберите множитель и сделайте ставку:</div>
+            <div style="font-size: 11px; color: #aaa;">Выберите цветный сектор и ставку:</div>
             
             <div class="multiplier-select">
-                <button class="mult-btn selected" id="mult_2" onclick="selectMultiplier(2)">x2</button>
-                <button class="mult-btn" id="mult_3" onclick="selectMultiplier(3)">x3</button>
-                <button class="mult-btn" id="mult_5" onclick="selectMultiplier(5)">x5</button>
-                <button class="mult-btn" id="mult_10" onclick="selectMultiplier(10)">x10</button>
-                <button class="mult-btn" id="mult_25" onclick="selectMultiplier(25)">x25</button>
+                <button class="mult-btn btn-x2 selected" id="mult_2" onclick="selectMultiplier(2)">x2</button>
+                <button class="mult-btn btn-x3" id="mult_3" onclick="selectMultiplier(3)">x3</button>
+                <button class="mult-btn btn-x5" id="mult_5" onclick="selectMultiplier(5)">x5</button>
+                <button class="mult-btn btn-x10" id="mult_10" onclick="selectMultiplier(10)">x10</button>
+                <button class="mult-btn btn-x25" id="mult_25" onclick="selectMultiplier(25)">x25</button>
             </div>
 
             <div class="wheel-container">
                 <div class="wheel-pointer"></div>
                 <div class="wheel" id="wheelElement">
+                    <div class="sector-label label-2">x2</div>
+                    <div class="sector-label label-3">x3</div>
+                    <div class="sector-label label-5">x5</div>
+                    <div class="sector-label label-10">x10</div>
+                    <div class="sector-label label-25">x25</div>
                     <div class="wheel-center">SPIN</div>
                 </div>
             </div>
@@ -935,19 +975,17 @@
             }
         }
 
-        // Логика Казино с колесом
+        // Логика Казино с цветными секторами
         let selectedMultiplier = 2;
         let isSpinning = false;
         let currentWheelRotation = 0;
 
-        // Порядок секторов на колесе по часовой стрелке (угол центра сектора)
-        // 0-72: x2, 72-144: x3, 144-216: x5, 216-288: x10, 288-360: x25
         const sectors = [
-            { mult: 2, centerAngle: 36 },
-            { mult: 3, centerAngle: 108 },
-            { mult: 5, centerAngle: 180 },
-            { mult: 10, centerAngle: 252 },
-            { mult: 25, centerAngle: 324 }
+            { mult: 2, centerAngle: 36, colorName: '🔴 Красный' },
+            { mult: 3, centerAngle: 108, colorName: '🔵 Синий' },
+            { mult: 5, centerAngle: 180, colorName: '🟣 Фиолетовый' },
+            { mult: 10, centerAngle: 252, colorName: '🟠 Оранжевый' },
+            { mult: 25, centerAngle: 324, colorName: '🟢 Зеленый' }
         ];
 
         function selectMultiplier(mult) {
@@ -998,11 +1036,10 @@
             let winningMult;
 
             if (isDevUser) {
-                // Админы всегда выигрывают на выбранном множителе
+                // Админы всегда побеждают
                 winningMult = selectedMultiplier;
             } else {
-                // Рандом с разными весами выпадения
-                // x2: 50%, x3: 25%, x5: 15%, x10: 7%, x25: 3%
+                // Шансы: x2 (50%), x3 (25%), x5 (15%), x10 (7%), x25 (3%)
                 const rand = Math.random() * 100;
                 if (rand < 50) winningMult = 2;
                 else if (rand < 75) winningMult = 3;
@@ -1013,10 +1050,8 @@
 
             const targetSector = sectors.find(s => s.mult === winningMult);
             
-            // Рассчитываем итоговый угол вращения (полные обороты + смещение до центра сектора)
-            const extraSpins = 5 * 360; // 5 полных оборотов
-            // Стрелка вверху (0 градусов), поэтому чтобы сектор оказался под ней, поворачиваем на (360 - centerAngle)
-            const targetAngle = extraSpins + (360 - targetSector.centerAngle) + (Math.random() * 10 - 5); 
+            const extraSpins = 5 * 360; 
+            const targetAngle = extraSpins + (360 - targetSector.centerAngle) + (Math.random() * 8 - 4); 
 
             currentWheelRotation += targetAngle;
             wheel.style.transform = `rotate(${currentWheelRotation}deg)`;
@@ -1032,10 +1067,10 @@
                         localStorage.setItem('telifon_score', score);
                     }
                     resultText.style.color = '#2ecc71';
-                    resultText.innerText = `🎉 Выпало x${winningMult}! Вы выиграли +${winAmount.toLocaleString()}!`;
+                    resultText.innerText = `🎉 Выпал ${targetSector.colorName} (x${winningMult})! +${winAmount.toLocaleString()}!`;
                 } else {
                     resultText.style.color = '#e74c3c';
-                    resultText.innerText = `😢 Выпало x${winningMult}. Ставка сгорела.`;
+                    resultText.innerText = `😢 Выпал ${targetSector.colorName} (x${winningMult}). Ставка сгорела.`;
                 }
 
                 scoreElement.innerText = renderScore();
