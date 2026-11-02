@@ -228,24 +228,94 @@
             transition: top 0.6s ease-in-out, left 0.6s ease-in-out;
         }
 
-        /* Казино стили */
+        /* Стили казино и колеса */
         .casino-box {
             background: #1a1a1a;
             border: 2px solid #ffcc00;
             border-radius: 15px;
-            padding: 15px;
+            padding: 12px;
             width: 100%;
             max-width: 340px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
             align-items: center;
         }
-        .casino-display {
-            font-size: 24px;
+        .wheel-container {
+            position: relative;
+            width: 160px;
+            height: 160px;
+            margin: 5px auto;
+        }
+        .wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 4px solid #ffcc00;
+            background: conic-gradient(
+                #e74c3c 0deg 72deg,
+                #3498db 72deg 144deg,
+                #9b59b6 144deg 216deg,
+                #e67e22 216deg 288deg,
+                #2ecc71 288deg 360deg
+            );
+            position: relative;
+            transition: transform 3s cubic-bezier(0.15, 0.9, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .wheel-pointer {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 16px solid #ffcc00;
+            z-index: 10;
+        }
+        .wheel-center {
+            position: absolute;
+            width: 45px;
+            height: 45px;
+            background: #121212;
+            border: 3px solid #ffcc00;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
             font-weight: bold;
-            color: #2ecc71;
-            min-height: 35px;
+            color: #ffcc00;
+        }
+        .multiplier-select {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 4px;
+            width: 100%;
+        }
+        .mult-btn {
+            background: #2a2a2a;
+            color: #ffcc00;
+            border: 1px solid #ffcc00;
+            padding: 6px 0;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .mult-btn.selected {
+            background: #ffcc00;
+            color: #000;
+        }
+        .casino-display {
+            font-size: 14px;
+            font-weight: bold;
+            color: #fff;
+            min-height: 25px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -255,17 +325,12 @@
             background: #111;
             color: #ffcc00;
             border: 1px solid #ffcc00;
-            padding: 10px;
+            padding: 8px;
             border-radius: 8px;
             text-align: center;
             font-weight: bold;
-            font-size: 16px;
+            font-size: 14px;
             outline: none;
-        }
-        .casino-btns-row {
-            display: flex;
-            gap: 6px;
-            width: 100%;
         }
     </style>
 </head>
@@ -325,7 +390,7 @@
         <button class="close-modal-btn" onclick="closeModal('skinsModal')">Закрыть</button>
     </div>
 
-    <!-- Модалка Карточек (Пассивный доход) -->
+    <!-- Модалка Карточек -->
     <div class="modal" id="cardsModal">
         <div class="modal-header">Пассивный Доход</div>
         <div class="modal-list" id="cardsList"></div>
@@ -342,17 +407,28 @@
 
     <!-- Модалка Казино -->
     <div class="modal" id="casinoModal">
-        <div class="modal-header">🎰 Казино Telifon</div>
+        <div class="modal-header">🎰 Колесо Фортуны</div>
         <div class="casino-box">
-            <div style="font-size: 13px; color: #aaa;">Испытай удачу! Шанс победы: 45%. Выигрыш: x2 ставка.</div>
-            <input type="number" id="casinoBetInput" class="casino-input" placeholder="Сумма ставки" value="1000">
-            <div class="casino-btns-row">
-                <button class="upgrade-btn" onclick="setCasinoBet('half')">1/2</button>
-                <button class="upgrade-btn" onclick="setCasinoBet('double')">x2</button>
-                <button class="upgrade-btn" onclick="setCasinoBet('max')">Макс</button>
+            <div style="font-size: 11px; color: #aaa;">Выберите множитель и сделайте ставку:</div>
+            
+            <div class="multiplier-select">
+                <button class="mult-btn selected" id="mult_2" onclick="selectMultiplier(2)">x2</button>
+                <button class="mult-btn" id="mult_3" onclick="selectMultiplier(3)">x3</button>
+                <button class="mult-btn" id="mult_5" onclick="selectMultiplier(5)">x5</button>
+                <button class="mult-btn" id="mult_10" onclick="selectMultiplier(10)">x10</button>
+                <button class="mult-btn" id="mult_25" onclick="selectMultiplier(25)">x25</button>
             </div>
-            <button class="upgrade-btn" style="background: #ffcc00; color: #000; font-size: 15px; padding: 12px;" onclick="playCasino()">Крутить (x2)</button>
-            <div class="casino-display" id="casinoResultText">Сделайте ставку!</div>
+
+            <div class="wheel-container">
+                <div class="wheel-pointer"></div>
+                <div class="wheel" id="wheelElement">
+                    <div class="wheel-center">SPIN</div>
+                </div>
+            </div>
+
+            <input type="number" id="casinoBetInput" class="casino-input" placeholder="Сумма ставки" value="1000">
+            <div class="casino-display" id="casinoResultText">Сделайте ставку и крутите!</div>
+            <button class="upgrade-btn" id="spinBtn" style="background: #ffcc00; color: #000; font-size: 14px; padding: 10px;" onclick="spinWheel()">Крутить колесо</button>
         </div>
         <button class="close-modal-btn" onclick="closeModal('casinoModal')">Закрыть</button>
     </div>
@@ -859,23 +935,41 @@
             }
         }
 
-        // Логика Казино
-        function setCasinoBet(type) {
-            const input = document.getElementById('casinoBetInput');
-            let val = parseInt(input.value) || 0;
-            if (type === 'half') {
-                input.value = Math.max(1, Math.floor(val / 2));
-            } else if (type === 'double') {
-                input.value = isDevUser ? val * 2 : Math.min(score, val * 2);
-            } else if (type === 'max') {
-                input.value = isDevUser ? 1000000 : score;
-            }
+        // Логика Казино с колесом
+        let selectedMultiplier = 2;
+        let isSpinning = false;
+        let currentWheelRotation = 0;
+
+        // Порядок секторов на колесе по часовой стрелке (угол центра сектора)
+        // 0-72: x2, 72-144: x3, 144-216: x5, 216-288: x10, 288-360: x25
+        const sectors = [
+            { mult: 2, centerAngle: 36 },
+            { mult: 3, centerAngle: 108 },
+            { mult: 5, centerAngle: 180 },
+            { mult: 10, centerAngle: 252 },
+            { mult: 25, centerAngle: 324 }
+        ];
+
+        function selectMultiplier(mult) {
+            selectedMultiplier = mult;
+            [2, 3, 5, 10, 25].forEach(m => {
+                const btn = document.getElementById(`mult_${m}`);
+                if (m === mult) {
+                    btn.classList.add('selected');
+                } else {
+                    btn.classList.remove('selected');
+                }
+            });
         }
 
-        function playCasino() {
+        function spinWheel() {
+            if (isSpinning) return;
+
             const input = document.getElementById('casinoBetInput');
             const bet = parseInt(input.value);
             const resultText = document.getElementById('casinoResultText');
+            const spinBtn = document.getElementById('spinBtn');
+            const wheel = document.getElementById('wheelElement');
 
             if (isNaN(bet) || bet <= 0) {
                 resultText.style.color = '#e74c3c';
@@ -891,28 +985,62 @@
 
             if (!isDevUser) {
                 score -= bet;
-            }
-
-            // Шанс выигрыша 45%
-            const win = Math.random() < 0.45;
-
-            if (win) {
-                const winAmount = bet * 2;
-                if (!isDevUser) {
-                    score += winAmount;
-                }
-                resultText.style.color = '#2ecc71';
-                resultText.innerText = `🎉 Победа! Вы выиграли +${winAmount.toLocaleString()}!`;
-            } else {
-                resultText.style.color = '#e74c3c';
-                resultText.innerText = `😢 Проигрыш! Вы потеряли ${bet.toLocaleString()}.`;
-            }
-
-            if (!isDevUser) {
                 localStorage.setItem('telifon_score', score);
             }
             scoreElement.innerText = renderScore();
             updateUpgradesUI();
+
+            isSpinning = true;
+            spinBtn.disabled = true;
+            resultText.style.color = '#ffcc00';
+            resultText.innerText = 'Колесо крутится... 🎡';
+
+            let winningMult;
+
+            if (isDevUser) {
+                // Админы всегда выигрывают на выбранном множителе
+                winningMult = selectedMultiplier;
+            } else {
+                // Рандом с разными весами выпадения
+                // x2: 50%, x3: 25%, x5: 15%, x10: 7%, x25: 3%
+                const rand = Math.random() * 100;
+                if (rand < 50) winningMult = 2;
+                else if (rand < 75) winningMult = 3;
+                else if (rand < 90) winningMult = 5;
+                else if (rand < 97) winningMult = 10;
+                else winningMult = 25;
+            }
+
+            const targetSector = sectors.find(s => s.mult === winningMult);
+            
+            // Рассчитываем итоговый угол вращения (полные обороты + смещение до центра сектора)
+            const extraSpins = 5 * 360; // 5 полных оборотов
+            // Стрелка вверху (0 градусов), поэтому чтобы сектор оказался под ней, поворачиваем на (360 - centerAngle)
+            const targetAngle = extraSpins + (360 - targetSector.centerAngle) + (Math.random() * 10 - 5); 
+
+            currentWheelRotation += targetAngle;
+            wheel.style.transform = `rotate(${currentWheelRotation}deg)`;
+
+            setTimeout(() => {
+                isSpinning = false;
+                spinBtn.disabled = false;
+
+                if (winningMult === selectedMultiplier) {
+                    const winAmount = bet * winningMult;
+                    if (!isDevUser) {
+                        score += winAmount;
+                        localStorage.setItem('telifon_score', score);
+                    }
+                    resultText.style.color = '#2ecc71';
+                    resultText.innerText = `🎉 Выпало x${winningMult}! Вы выиграли +${winAmount.toLocaleString()}!`;
+                } else {
+                    resultText.style.color = '#e74c3c';
+                    resultText.innerText = `😢 Выпало x${winningMult}. Ставка сгорела.`;
+                }
+
+                scoreElement.innerText = renderScore();
+                updateUpgradesUI();
+            }, 3000);
         }
 
         function renderRefUI() {
