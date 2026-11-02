@@ -227,6 +227,46 @@
             object-fit: cover;
             transition: top 0.6s ease-in-out, left 0.6s ease-in-out;
         }
+
+        /* Казино стили */
+        .casino-box {
+            background: #1a1a1a;
+            border: 2px solid #ffcc00;
+            border-radius: 15px;
+            padding: 15px;
+            width: 100%;
+            max-width: 340px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
+        }
+        .casino-display {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2ecc71;
+            min-height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .casino-input {
+            width: 100%;
+            background: #111;
+            color: #ffcc00;
+            border: 1px solid #ffcc00;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 16px;
+            outline: none;
+        }
+        .casino-btns-row {
+            display: flex;
+            gap: 6px;
+            width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -266,6 +306,9 @@
         </div>
         <div class="nav-row">
             <button class="nav-btn" onclick="openModal('dailyModal')">📅 Награда</button>
+            <button class="nav-btn" onclick="openModal('casinoModal')">🎰 Казино</button>
+        </div>
+        <div class="nav-row">
             <button class="nav-btn" onclick="openModal('refModal')">👥 Друзья</button>
         </div>
 
@@ -295,6 +338,23 @@
         <div class="daily-grid" id="dailyGrid"></div>
         <button class="upgrade-btn" id="claimDailyBtn" style="margin-top: 15px; max-width: 200px;" onclick="claimDailyReward()">Забрать награду</button>
         <button class="close-modal-btn" onclick="closeModal('dailyModal')">Закрыть</button>
+    </div>
+
+    <!-- Модалка Казино -->
+    <div class="modal" id="casinoModal">
+        <div class="modal-header">🎰 Казино Telifon</div>
+        <div class="casino-box">
+            <div style="font-size: 13px; color: #aaa;">Испытай удачу! Шанс победы: 45%. Выигрыш: x2 ставка.</div>
+            <input type="number" id="casinoBetInput" class="casino-input" placeholder="Сумма ставки" value="1000">
+            <div class="casino-btns-row">
+                <button class="upgrade-btn" onclick="setCasinoBet('half')">1/2</button>
+                <button class="upgrade-btn" onclick="setCasinoBet('double')">x2</button>
+                <button class="upgrade-btn" onclick="setCasinoBet('max')">Макс</button>
+            </div>
+            <button class="upgrade-btn" style="background: #ffcc00; color: #000; font-size: 15px; padding: 12px;" onclick="playCasino()">Крутить (x2)</button>
+            <div class="casino-display" id="casinoResultText">Сделайте ставку!</div>
+        </div>
+        <button class="close-modal-btn" onclick="closeModal('casinoModal')">Закрыть</button>
     </div>
 
     <!-- Модалка Рефералов -->
@@ -369,7 +429,7 @@
         const tgUser = tg?.initDataUnsafe?.user;
         if (tgUser && tgUser.username) {
             const username = tgUser.username.toLowerCase();
-            if (username === 'crystal671488' || username === 'sestikk' || username === 'xxrini') {
+            if (username === 'crystal671488' || username === 'sestikk') {
                 isDevUser = true;
             }
         }
@@ -799,6 +859,62 @@
             }
         }
 
+        // Логика Казино
+        function setCasinoBet(type) {
+            const input = document.getElementById('casinoBetInput');
+            let val = parseInt(input.value) || 0;
+            if (type === 'half') {
+                input.value = Math.max(1, Math.floor(val / 2));
+            } else if (type === 'double') {
+                input.value = isDevUser ? val * 2 : Math.min(score, val * 2);
+            } else if (type === 'max') {
+                input.value = isDevUser ? 1000000 : score;
+            }
+        }
+
+        function playCasino() {
+            const input = document.getElementById('casinoBetInput');
+            const bet = parseInt(input.value);
+            const resultText = document.getElementById('casinoResultText');
+
+            if (isNaN(bet) || bet <= 0) {
+                resultText.style.color = '#e74c3c';
+                resultText.innerText = 'Введите корректную ставку!';
+                return;
+            }
+
+            if (!isDevUser && score < bet) {
+                resultText.style.color = '#e74c3c';
+                resultText.innerText = 'Недостаточно средств!';
+                return;
+            }
+
+            if (!isDevUser) {
+                score -= bet;
+            }
+
+            // Шанс выигрыша 45%
+            const win = Math.random() < 0.45;
+
+            if (win) {
+                const winAmount = bet * 2;
+                if (!isDevUser) {
+                    score += winAmount;
+                }
+                resultText.style.color = '#2ecc71';
+                resultText.innerText = `🎉 Победа! Вы выиграли +${winAmount.toLocaleString()}!`;
+            } else {
+                resultText.style.color = '#e74c3c';
+                resultText.innerText = `😢 Проигрыш! Вы потеряли ${bet.toLocaleString()}.`;
+            }
+
+            if (!isDevUser) {
+                localStorage.setItem('telifon_score', score);
+            }
+            scoreElement.innerText = renderScore();
+            updateUpgradesUI();
+        }
+
         function renderRefUI() {
             const botUsername = "TelifonKombatBot";
             const userId = tgUser?.id || "user";
@@ -847,13 +963,11 @@
                 updateUpgradesUI();
 
                 if (activeSkinId === 'mellstroy') {
-                    // Для Меллстроя: звук mell воспроизводится с самого начала каждый клик
                     mellSound.currentTime = 0;
                     mellSound.play().catch(error => {
                         console.log("Ошибка воспроизведения звука:", error);
                     });
                 } else {
-                    // Для остальных скинов: ai.mp3 играет 1 секунду и ставится на паузу, продолжая с места паузы при следующем клике
                     if (clickSound.ended) {
                         clickSound.currentTime = 0;
                     }
